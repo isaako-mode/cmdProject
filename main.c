@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "./commands.h"
 #include <dirent.h>
+#include <unistd.h>
+
 
 #define MAX_STRINGS 50
 #define MAX_CMD_LEN 15
@@ -23,7 +25,7 @@ void free_array(char **arr) {
 
 //check if user entered a valid command
 bool check_cmd(char *cmd){
-    const char *COMMANDS[] = {"ls", "cd", "escape", NULL};
+    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", NULL};
     bool known_cmd = false;
     int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 
@@ -91,7 +93,7 @@ int main() {
     //loop for terminal
     while(1==1) {
 
-        printf("Enter a command or type 'escape' to exit\n");
+        printf("\nEnter a command or type 'escape' to exit\n");
 
         //get user input
         fgets(inputStr, sizeof(inputStr), stdin);

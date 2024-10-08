@@ -6,5 +6,6 @@ void run_commands(char* cmd, char args[]);
 char* cd(char args[]);
 void list(char args[]);
 void escape();
+void clearScreen();
 
 #endif
