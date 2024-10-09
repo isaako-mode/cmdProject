@@ -5,6 +5,8 @@
 #include "./commands.h"
 #include <dirent.h>
 #include <unistd.h>
+#include<fcntl.h> 
+
 
 #define MAX_STRINGS 50
 #define MAX_CMD_LEN 15
@@ -14,6 +16,10 @@ typedef struct {
     char **strs;
     char *command;
     char **args;
+
+    char *redirectSymbol;
+    char *writeFile;
+    bool isRedirect;
 } Input;
 
 //free char arrays
@@ -40,6 +46,21 @@ bool check_cmd(char *cmd){
     return known_cmd;
 }
 
+//redirect stdout to write file
+void configure_redirection(char *redirectSymbol, char *writeFile) {
+    //file descriptor
+    int fd;
+
+    if(strcmp(redirectSymbol, ">>") == 0) {
+        fd = open(writeFile, O_WRONLY | O_APPEND);
+    }
+
+    if(dup2(fd, STDOUT_FILENO) == -1){
+        printf("dup2 failed");
+    }
+    close(fd);
+}
+
 //process the input string - returns Input struct with split strings
 Input process_input(char inputStr[]) {
     char *token = strtok(inputStr, " ");
@@ -47,6 +68,8 @@ Input process_input(char inputStr[]) {
     vals.strs = malloc(MAX_STRINGS * sizeof(char *));
     vals.command = malloc(MAX_CMD_LEN * sizeof(char *));
     vals.args = malloc(MAX_STRINGS * sizeof(char *));
+    vals.isRedirect = false;
+
 
     int i = 0;
     while(token != NULL && i < MAX_STRINGS) {
@@ -76,8 +99,27 @@ Input process_input(char inputStr[]) {
        //S int num_args = (sizeof(vals.strs) / sizeof(vals.strs[1])) - 1;
 
         for(int j = 1; vals.strs[j] != NULL; j++) {
-            vals.args[j-1] = malloc(strlen(vals.strs[j]) + 1);
-            strcpy(vals.args[j-1], vals.strs[j]);
+
+            //handle redirection (configure redirect type and write file)
+            if((vals.strs[j][0] == '>' || vals.strs[j][0] == '<') || vals.isRedirect) {
+
+                if(vals.isRedirect) {
+                    //TODO: handle missing file
+                    vals.writeFile = malloc(strlen(vals.strs[j]));
+                    strcpy(vals.writeFile, vals.strs[j]);
+                    continue;
+                }
+                vals.redirectSymbol = malloc(strlen(vals.strs[j]));
+                strcpy(vals.redirectSymbol, vals.strs[j]);
+                vals.isRedirect = true;
+
+            }
+
+            //else add to args
+            else {
+                vals.args[j-1] = malloc(strlen(vals.strs[j]) + 1);
+                strcpy(vals.args[j-1], vals.strs[j]);
+            }
         }
     }
 
@@ -91,7 +133,6 @@ int main() {
 
     //loop for terminal
     while(1==1) {
-
         printf("\nEnter a command or type 'escape' to exit $ ");
 
         //get user input
@@ -107,6 +148,11 @@ int main() {
 
         Input results = process_input(inputStr);
 
+        if(results.isRedirect) {
+            fflush(stdout);
+            configure_redirection(results.redirectSymbol, results.writeFile);
+        }
+
         //printf("%s\n", results.command);
 
         run_commands(results.command, results.args);
@@ -115,8 +161,17 @@ int main() {
         free_array(results.args);
         free(results.command);
         memset(inputStr, '\0', sizeof(inputStr));
+
+        // if(results.redirectSymbol != NULL){
+        //     free(results.redirectSymbol);
+        // }
+        // free(results.writeFile);
+        results.isRedirect = false;
+
     }
+
     return 0;
+
 }
 
 

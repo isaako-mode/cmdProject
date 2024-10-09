@@ -5,6 +5,8 @@
 #include <dirent.h>
 #include "./commands.h"
 #include <unistd.h>
+#define MY_STDOUT STDOUT_FILENO
+
 
 //ECHO
 void echo(char** args) {
@@ -111,8 +113,14 @@ void clearScreen()
   write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 11);
 }
 
-char* run_commands(char* cmd, char** args) {
+ run_commands(char* cmd, char** args) {
 
+    //save STDOUT file desc to convert back later
+    const int stdoutFileDesc = dup(MY_STDOUT);
+
+    if (stdoutFileDesc == -1) {
+        perror("dup failed");
+    }
      if(strcmp(cmd, "escape") == 0) {
         escape();
     }
@@ -131,5 +139,13 @@ char* run_commands(char* cmd, char** args) {
      else if(strcmp(cmd, "echo") == 0) {
         echo(args);
     }
+
+        // Restore stdout to the original terminal output
+    if (dup2(stdoutFileDesc, STDOUT_FILENO) == -1) {
+        perror("dup2 failed");
+    }
+
+    close(stdoutFileDesc);
+
 }
 
