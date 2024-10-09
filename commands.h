@@ -7,5 +7,7 @@ char* cd(char args[]);
 void list(char args[]);
 void escape();
 void clearScreen();
+void cat(char** args);
+
 
 #endif

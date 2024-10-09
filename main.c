@@ -6,7 +6,6 @@
 #include <dirent.h>
 #include <unistd.h>
 
-
 #define MAX_STRINGS 50
 #define MAX_CMD_LEN 15
 
@@ -25,7 +24,7 @@ void free_array(char **arr) {
 
 //check if user entered a valid command
 bool check_cmd(char *cmd){
-    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", NULL};
+    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", NULL};
     bool known_cmd = false;
     int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 

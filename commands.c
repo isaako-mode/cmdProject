@@ -6,8 +6,30 @@
 #include "./commands.h"
 #include <unistd.h>
 
+void cat(char** args) {
+    FILE *fptr;
 
+    if(args[0] != NULL) {
+
+        fptr = fopen(args[0], "r");
+    }
+
+    char text[500];
+
+    if(fptr != NULL){
+
+        while(fgets(text, 500, fptr)) {
+            printf("%s", text);
+        }
+    }
+    else {
+        printf("no file foo");
+    }
+}
+
+//LS
 void list(char** args){
+    //Define directory struct
     struct dirent *de;
     DIR *dr;
 
@@ -87,6 +109,9 @@ char* run_commands(char* cmd, char** args) {
         clearScreen();
     } else if(strcmp(cmd, "cd") == 0) {
         cd(args);
+    }
+      else if(strcmp(cmd, "cat") == 0) {
+        cat(args);
     }
 }
 
