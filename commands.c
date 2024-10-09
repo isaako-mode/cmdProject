@@ -6,6 +6,19 @@
 #include "./commands.h"
 #include <unistd.h>
 
+//ECHO
+void echo(char** args) {
+    if(args[0] != NULL) {
+        for(int i=0; args[i] != NULL; i++) {
+            printf("%s%c", args[i], ' ');
+        }
+    }
+    else {
+        printf("Nothing to print!");
+    }
+}
+
+//CAT
 void cat(char** args) {
     FILE *fptr;
 
@@ -64,6 +77,7 @@ void list(char** args){
     return; 
 }
 
+//ESCAPE
 void escape() {
     printf("%s", "Goodbye =)");
     exit(0);
@@ -94,24 +108,28 @@ void cd(char **args) {
 void clearScreen()
 {
   const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
-  write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 12);
+  write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 11);
 }
 
 char* run_commands(char* cmd, char** args) {
 
-    if(strcmp(cmd, "escape") == 0) {
+     if(strcmp(cmd, "escape") == 0) {
         escape();
-
-    } else if(strcmp(cmd, "ls") == 0) {
+    }
+     else if(strcmp(cmd, "ls") == 0) {
         list(args);
-
-    } else if(strcmp(cmd, "clear") == 0) {
+    }
+     else if(strcmp(cmd, "clear") == 0) {
         clearScreen();
-    } else if(strcmp(cmd, "cd") == 0) {
+    }
+     else if(strcmp(cmd, "cd") == 0) {
         cd(args);
     }
-      else if(strcmp(cmd, "cat") == 0) {
+     else if(strcmp(cmd, "cat") == 0) {
         cat(args);
+    }
+     else if(strcmp(cmd, "echo") == 0) {
+        echo(args);
     }
 }
 

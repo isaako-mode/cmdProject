@@ -24,7 +24,7 @@ void free_array(char **arr) {
 
 //check if user entered a valid command
 bool check_cmd(char *cmd){
-    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", NULL};
+    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", NULL};
     bool known_cmd = false;
     int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 
@@ -92,7 +92,7 @@ int main() {
     //loop for terminal
     while(1==1) {
 
-        printf("\nEnter a command or type 'escape' to exit\n");
+        printf("\nEnter a command or type 'escape' to exit $ ");
 
         //get user input
         fgets(inputStr, sizeof(inputStr), stdin);
