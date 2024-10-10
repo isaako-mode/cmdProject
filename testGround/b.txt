@@ -10,4 +10,8 @@ Enter a command or type 'escape' to exit $ taco
 Enter a command or type 'escape' to exit $ a.txt  b.txt  PORN  
 Enter a command or type 'escape' to exit $ dddd 
 Enter a command or type 'escape' to exit $ Goodbye =)location 
+Enter a command or type 'escape' to exit $ Goodbye =)bb 
 Enter a command or type 'escape' to exit $ Goodbye =)
+Enter a command or type 'escape' to exit $ Goodbye =)
+Enter a command or type 'escape' to exit $ a.txt  b.txt  PORN  
+Enter a command or type 'escape' to exit $ 

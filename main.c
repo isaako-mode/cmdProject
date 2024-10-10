@@ -141,31 +141,44 @@ int main() {
         //set ending newline to null terminator
         inputStr[strcspn(inputStr, "\n")] = '\0';
 
-        //check if user types in "exit"
-        // if (strcmp(inputStr, "escape") == 0){
-        //     exit(0);
-        // }
-
         Input results = process_input(inputStr);
 
-        if(results.isRedirect) {
-            fflush(stdout);
-            configure_redirection(results.redirectSymbol, results.writeFile);
+        //If not a local command, run create child and run external
+        bool local = run_local_commands(results.command, results.args);
+        if(!local) {
+            
+            pid_t pid = fork();
+
+            if(pid == -1) {
+                printf("failed to fork");
+                exit(1);
+            }
+
+            else if(pid > 0) {
+                waitpid(pid, NULL, 0);
+            }
+            else {
+                
+                if(results.isRedirect) {
+                    fflush(stdout);
+                    configure_redirection(results.redirectSymbol, results.writeFile);
+            }
+
+                run_commands(results.command, results.args);
+                exit(0);
         }
 
-        //printf("%s\n", results.command);
-
-        run_commands(results.command, results.args);
-
-        free_array(results.strs);
-        free_array(results.args);
-        free(results.command);
-        memset(inputStr, '\0', sizeof(inputStr));
+        }
 
         // if(results.redirectSymbol != NULL){
         //     free(results.redirectSymbol);
         // }
-        // free(results.writeFile);
+
+        //free(results.writeFile);
+        free_array(results.strs);
+        free_array(results.args);
+        free(results.command);
+        memset(inputStr, '\0', sizeof(inputStr));
         results.isRedirect = false;
 
     }

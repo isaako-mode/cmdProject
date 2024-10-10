@@ -7,78 +7,6 @@
 #include <unistd.h>
 #define MY_STDOUT STDOUT_FILENO
 
-
-//ECHO
-void echo(char** args) {
-    if(args[0] != NULL) {
-        for(int i=0; args[i] != NULL; i++) {
-            printf("%s%c", args[i], ' ');
-        }
-    }
-    else {
-        printf("Nothing to print!");
-    }
-}
-
-//CAT
-void cat(char** args) {
-    FILE *fptr;
-
-    if(args[0] != NULL) {
-
-        fptr = fopen(args[0], "r");
-    }
-
-    char text[500];
-
-    if(fptr != NULL){
-
-        while(fgets(text, 500, fptr)) {
-            printf("%s", text);
-        }
-    }
-    else {
-        printf("no file foo");
-    }
-}
-
-//LS
-void list(char** args){
-    //Define directory struct
-    struct dirent *de;
-    DIR *dr;
-
-    if(args[0] == NULL) {
-        dr = opendir(".");
-    } 
-    else if(strcmp(args[0], "~") == 0) {
-        dr = opendir("/home/isaakpi");
-    }
-
-    else {
-        dr = opendir(args[0]);
-    }
-
-    if (dr == NULL) {
-        printf("Could not open current directory" ); 
-        return;
-    }
-
-    char hidden = '.';
-    while ((de = readdir(dr)) != NULL) {
-        //SEG FAULT HERE!!
-        if(strncmp(de->d_name, &hidden, 1) == 0) {
-            continue;
-        }
-
-        printf("%s  ", de->d_name); 
-    }
-    printf("%s  ", "PORN");
-  
-    closedir(dr);     
-    return; 
-}
-
 //ESCAPE
 void escape() {
     printf("%s", "Goodbye =)");
@@ -87,7 +15,7 @@ void escape() {
 
 //CHANGE DIRECTORY
 void cd(char **args) {
-    const char *path;
+    char *path;
     if(args[0] == NULL) {
         path = ("/home/isaakpi");
     } 
@@ -103,7 +31,6 @@ void cd(char **args) {
         printf("Changed directory to: %s\n", path);  
     }
 
-    list(args);
 }
 
 //CLEAR
@@ -113,39 +40,74 @@ void clearScreen()
   write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 11);
 }
 
- run_commands(char* cmd, char** args) {
+ void run_commands(char* cmd, char** args) {
+    char path[100] = "/home/isaakpi/Desktop/c_projects/terminal_project/";
+    int args_count = 0;
 
-    //save STDOUT file desc to convert back later
-    const int stdoutFileDesc = dup(MY_STDOUT);
+    //calculate number of args
+    while (args[args_count] != NULL) {
+        args_count++;
+    }
 
-    if (stdoutFileDesc == -1) {
-        perror("dup failed");
+    //size of new arg list
+    char *argsv[args_count + 2];
+    for(int i = 0; i < args_count + 2;i++) {
+        argsv[i] = NULL;
     }
-     if(strcmp(cmd, "escape") == 0) {
-        escape();
+
+    //set path file 
+    strcat(path, cmd);
+    argsv[0] = strdup(path);
+
+    //dupe args to new arg list
+    for (int i = 1; args[i-1] != NULL; i++) {
+        argsv[i] = strdup(args[i-1]);
     }
-     else if(strcmp(cmd, "ls") == 0) {
-        list(args);
+
+
+    //set null terminator
+    args[args_count+1] = NULL;
+
+    //FOR DEBUGGING
+    // for (int i = 0; argsv[i] != NULL; i++) {
+    //     printf("argsv[%d]: %s\n", i, argsv[i]);
+    // }
+
+
+     if(strcmp(cmd, "ls") == 0) {
+        execvp(argsv[0], argsv);
     }
-     else if(strcmp(cmd, "clear") == 0) {
-        clearScreen();
-    }
-     else if(strcmp(cmd, "cd") == 0) {
-        cd(args);
-    }
+
      else if(strcmp(cmd, "cat") == 0) {
-        cat(args);
+        execvp(argsv[0], argsv);
     }
      else if(strcmp(cmd, "echo") == 0) {
-        echo(args);
+        execvp(argsv[0], argsv);
     }
 
-        // Restore stdout to the original terminal output
-    if (dup2(stdoutFileDesc, STDOUT_FILENO) == -1) {
-        perror("dup2 failed");
+    for(int i=0; i< args_count + 1; i++) {
+        free(argsv[i]);
     }
 
-    close(stdoutFileDesc);
+}
 
+bool run_local_commands(char* cmd, char** args) {
+
+    if(strcmp(cmd, "escape") == 0) {
+        escape();
+        return true;
+    }
+    else if(strcmp(cmd, "cd") == 0) {
+        cd(args);
+        return true;
+    }
+
+    else if(strcmp(cmd, "clear") == 0) {
+        clearScreen();
+        return true;
+    }
+
+
+    return false;
 }
 
