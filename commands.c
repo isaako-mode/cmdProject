@@ -15,10 +15,14 @@ void escape() {
 
 //CHANGE DIRECTORY
 void cd(char **args) {
+    //path var
     char *path;
+
+    //set to working directory if no arg
     if(args[0] == NULL) {
         path = ("/home/isaakpi");
     } 
+    //else set to arg
     else {
         path = args[0];
     }
@@ -40,6 +44,8 @@ void clearScreen()
   write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 11);
 }
 
+
+//run external commands
  void run_commands(char* cmd, char** args) {
     char path[100] = "/home/isaakpi/Desktop/c_projects/terminal_project/";
     int args_count = 0;
@@ -91,6 +97,7 @@ void clearScreen()
 
 }
 
+//run local commands
 bool run_local_commands(char* cmd, char** args) {
 
     if(strcmp(cmd, "escape") == 0) {

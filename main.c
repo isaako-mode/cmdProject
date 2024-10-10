@@ -51,26 +51,39 @@ void configure_redirection(char *redirectSymbol, char *writeFile) {
     //file descriptor
     int fd;
 
+    //check redirect types and set correct mode
     if(strcmp(redirectSymbol, ">>") == 0) {
-        fd = open(writeFile, O_WRONLY | O_APPEND);
+        fd = open(writeFile, O_WRONLY | O_APPEND | O_CREAT, 0644);
     }
 
-    if(dup2(fd, STDOUT_FILENO) == -1){
+    else if(strcmp(redirectSymbol, ">") == 0) {
+        fd = open(writeFile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    }
+
+    //error handling
+    if(dup2(fd, STDOUT_FILENO) == -1) {
         printf("dup2 failed");
     }
+
     close(fd);
 }
 
 //process the input string - returns Input struct with split strings
 Input process_input(char inputStr[]) {
+
+    //tokenize the input by splitting by whitespace
     char *token = strtok(inputStr, " ");
+
+    //define input type for holding input values (terrible name)
     Input vals;
+
+    //allocate for input members
     vals.strs = malloc(MAX_STRINGS * sizeof(char *));
     vals.command = malloc(MAX_CMD_LEN * sizeof(char *));
     vals.args = malloc(MAX_STRINGS * sizeof(char *));
     vals.isRedirect = false;
 
-
+    //copy individual inputs into an array of strings
     int i = 0;
     while(token != NULL && i < MAX_STRINGS) {
 
@@ -85,8 +98,10 @@ Input process_input(char inputStr[]) {
         i += 1;
     }
 
+    //set null terminator
     vals.strs[i] = NULL;
 
+    //check if there is a command or if it exists then copy into input member
     if(vals.strs[0] != NULL && check_cmd(vals.strs[0])) {
         strcpy(vals.command, vals.strs[0]);
     }
@@ -98,6 +113,7 @@ Input process_input(char inputStr[]) {
     if(vals.strs[1] != NULL) {
        //S int num_args = (sizeof(vals.strs) / sizeof(vals.strs[1])) - 1;
 
+        //handle rest of the inputs (redirect symbols/args)
         for(int j = 1; vals.strs[j] != NULL; j++) {
 
             //handle redirection (configure redirect type and write file)
@@ -131,6 +147,13 @@ int main() {
     //user input 
     char inputStr[100];
 
+    //save stdout file desc
+    const int saveStdout = dup(STDOUT_FILENO);
+
+    if(saveStdout == -1) {
+        printf("dup failed");
+        exit(1);
+    }
     //loop for terminal
     while(1==1) {
         printf("\nEnter a command or type 'escape' to exit $ ");
@@ -149,22 +172,33 @@ int main() {
             
             pid_t pid = fork();
 
+            //if fork failed
             if(pid == -1) {
                 printf("failed to fork");
                 exit(1);
             }
 
+            //if we are the parent process, wait for child to terminate
             else if(pid > 0) {
                 waitpid(pid, NULL, 0);
             }
+
+            //if we are a child process, handle external commands 
             else {
-                
+                //check redirect flag and configure redirect if needed
                 if(results.isRedirect) {
                     fflush(stdout);
                     configure_redirection(results.redirectSymbol, results.writeFile);
             }
 
+                //run external commands as a child process
                 run_commands(results.command, results.args);
+
+                if(dup2(saveStdout, STDERR_FILENO) == -1) {
+                    printf("dup2 failed");
+                    exit(1);
+                }
+
                 exit(0);
         }
 
