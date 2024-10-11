@@ -8,6 +8,7 @@ CFLAGS = -Wall -g
 LS_BIN = ls
 CAT_BIN = cat
 ECHO_BIN = echo
+MV_BIN = mv
 MAIN_BIN = my_program
 
 # Source files for each command
@@ -15,16 +16,18 @@ MAIN_SRCS = main.c commands.c
 LS_SRCS = list.c commands.c
 CAT_SRCS = cat.c commands.c
 ECHO_SRCS = echo.c commands.c
+MV_SRCS = mv.c commands.c
 
 # Object files (auto-generated from source files)
 MAIN_OBJS = $(MAIN_SRCS:.c=.o)
 LS_OBJS = $(LS_SRCS:.c=.o)
 CAT_OBJS = $(CAT_SRCS:.c=.o)
 ECHO_OBJS = $(ECHO_SRCS:.c=.o)
+MV_OBJS = $(MV_SRCS:.c=.o)
 
 
 # Default rule: build all binaries
-all: $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) 
+all: $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) $(MV_BIN) 
 
 # Rule to build the main binary (e.g., for the core application)
 $(MAIN_BIN): $(MAIN_OBJS)
@@ -38,9 +41,13 @@ $(LS_BIN): $(LS_OBJS)
 $(ECHO_BIN): $(ECHO_OBJS)
 	$(CC) $(CFLAGS) -o $(ECHO_BIN) $(ECHO_OBJS)
 
-#Cat rule
+#Cat ruleS
 $(CAT_BIN): $(CAT_OBJS)
 	$(CC) $(CFLAGS) -o $(CAT_BIN) $(CAT_OBJS)
+
+#mv rules
+$(MV_BIN): $(MV_OBJS)
+	$(CC) $(CFLAGS) -o $(MV_BIN) $(MV_OBJS)
 
 # Generic rule to build object files
 %.o: %.c
@@ -48,6 +55,4 @@ $(CAT_BIN): $(CAT_OBJS)
 
 # Clean up build artifacts
 clean:
-	rm -f $(MAIN_OBJS) $(LS_OBJS) $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN)
-
-.PHONY: clean all
+	rm -f $(MAIN_OBJS) $(LS_OBJS) $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) $(MV_BIN)

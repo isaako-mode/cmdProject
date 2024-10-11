@@ -1,0 +1,113 @@
+
+
+PLAN TO MAKE PIPES
+
+create Input type:
+
+typedef struct {
+    char **strs;
+    char *command;
+    char **args;
+
+    char *redirectSymbol;
+    char *writeFile;
+    bool isRedirect;
+
+    bool isPipe; //is pipe flag
+    
+} Input;
+
+
+
+
+process_input(in_file)
+
+    ...
+
+     //handle rest of the inputs (redirect symbols/args)
+        for(int j = 1; vals.strs[j] != NULL; j++) {
+
+            //handle redirection (configure redirect type and write file)
+            if((vals.strs[j][0] == '>' || vals.strs[j][0] == '<') || vals.isRedirect) {
+
+                if(vals.isRedirect) {
+                    //TODO: handle missing file
+                    vals.writeFile = malloc(strlen(vals.strs[j]));
+                    strcpy(vals.writeFile, vals.strs[j]);
+                    continue;
+                }
+                vals.redirectSymbol = malloc(strlen(vals.strs[j]));
+                strcpy(vals.redirectSymbol, vals.strs[j]);
+                vals.isRedirect = true;
+
+            }
+
+
+
+
+                  // ******************************* PLAN TO ADD PIPES *****************************************
+            if vals.strs[j][0] = "|":
+                is pipe = true 
+            else:
+                isPipe = false
+
+            //else add to args
+            else {
+                vals.args[j-1] = malloc(strlen(vals.strs[j]) + 1);
+                strcpy(vals.args[j-1], vals.strs[j]);
+            }
+        }
+    }
+
+
+
+
+
+// **************************** main() LINE 157 ****************************************
+        //loop for terminal
+    while(1==1) {
+        printf("\nEnter a command or type 'escape' to exit $ ");
+
+        //get user input
+        fgets(inputStr, sizeof(inputStr), stdin);
+
+        //set ending newline to null terminator
+        inputStr[strcspn(inputStr, "\n")] = '\0';
+
+        Input results = process_input(inputStr);
+
+        // *********** FOR PIPES **********
+
+        if results.isPipe:
+            //list of inputs to execute and flag saying we need to read in more pipes
+            Input *input_pipe[50] //<- arbitrary size for now
+            bool more_pipes = true
+            char ** input_stirngs
+
+            int i = 0
+            while more_pipes:
+                //* will need to extract input strings between pipes
+                input_pipes[i] = process_input(input_strings[i])
+                more_pipes = input_pipes[i].isPipe
+
+
+            // EXECUTE THE COMMANDS
+            int j = 0
+            while input_pipes[j] != NULL:
+                
+                pid = fork
+
+                if childProcess:
+                    run_commands(cmd args) // set file descriptor
+
+
+        //If not a local command, run create child and run external
+        bool local = run_local_commands(results.command, results.args);
+        if(!local) {
+            
+            pid_t pid = fork();
+
+            //if fork failed
+            if(pid == -1) {
+                printf("failed to fork");
+                exit(1);

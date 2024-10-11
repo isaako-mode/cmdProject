@@ -30,7 +30,7 @@ void free_array(char **arr) {
 
 //check if user entered a valid command
 bool check_cmd(char *cmd){
-    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", NULL};
+    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", NULL};
     bool known_cmd = false;
     int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 
