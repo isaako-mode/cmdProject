@@ -8,7 +8,8 @@
 #include<fcntl.h> 
 
 int main(int argc, char **argv) {
-
+    
+    //in the case that the user wants to move the file into a folder within their working directory, build the path to it.
     int dir_path_len = strlen(argv[2]) + strlen(argv[1]) + 2;
     char *into_dir = malloc(dir_path_len);
     if (into_dir == NULL) {
@@ -21,12 +22,13 @@ int main(int argc, char **argv) {
     strcat(into_dir, argv[1]);
 
 
-    // rename old file with new name
+    // rename to the path (move the file to path)
     if (rename(argv[1], into_dir) == 0)
     {
         printf("%s%s", "File renamed moved into directory: ", argv[2]);
     }
 
+    //rename file
     else if (rename(argv[1], argv[2]) == 0) {
         printf("rename successful");
     }

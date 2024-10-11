@@ -95,6 +95,14 @@ void clearScreen()
         execvp(argsv[0], argsv);
     }
 
+    else if(strcmp(cmd, "touch") == 0) {
+        execvp(argsv[0], argsv);
+    }
+
+    else if(strcmp(cmd, "mkdir") == 0) {
+        execvp(argsv[0], argsv);
+    }
+
     for(int i=0; i< args_count + 1; i++) {
         free(argsv[i]);
     }
