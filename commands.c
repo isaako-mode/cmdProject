@@ -26,7 +26,6 @@ void cd(char **args) {
     else {
         path = args[0];
     }
-    printf("Changed directory to: %s\n", path);  
 
     if(chdir(path) != 0) {
         perror("cd failed");
@@ -73,7 +72,7 @@ void clearScreen()
 
     //set null terminator
     args[args_count+1] = NULL;
-
+\
     //FOR DEBUGGING
     // for (int i = 0; argsv[i] != NULL; i++) {
     //     printf("argsv[%d]: %s\n", i, argsv[i]);
