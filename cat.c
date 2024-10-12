@@ -8,7 +8,7 @@
 #include<fcntl.h> 
 
 int main(int argc, char **argv) {
-        FILE *fptr;
+    FILE *fptr;
 
     if(argv[1] != NULL) {
 

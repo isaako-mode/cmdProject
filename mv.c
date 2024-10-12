@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     
+    //calculate relative path
     strcpy(dir_path, argv[dir_path_len-2]);
     strcat(dir_path, "/");
     strcat(dir_path, argv[1]);
@@ -35,7 +36,7 @@ int main(int argc, char **argv) {
         int path_size;
         for(int i = 2; i < dir_path_len-2; i++) {
 
-            //calculate path to move to
+            //calculate relative path (add/sub 2 to account for directory name at end and null terminator)
             path_size = strlen(argv[dir_path_len-2]) + strlen(argv[i]) + 2;
             memset(dir_path, '\0', path_size*sizeof(char*));
             strcpy(dir_path, argv[dir_path_len-2]);

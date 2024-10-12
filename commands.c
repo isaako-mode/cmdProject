@@ -7,6 +7,9 @@
 #include <unistd.h>
 #define MY_STDOUT STDOUT_FILENO
 
+
+ // ******************************* LOCAL FUNCTIONS TO RUN ON THE MAIN PROCESS *****************************
+
 //ESCAPE
 void escape() {
     printf("%s", "Goodbye =)");
@@ -100,6 +103,16 @@ void clearScreen()
 
     else if(strcmp(cmd, "mkdir") == 0) {
         execvp(argsv[0], argsv);
+    }
+
+    else if(strcmp(cmd, "grep") == 0) {
+
+        for (int i = 0; argsv[i] != NULL; i++) {
+            printf("argsv[%d]: %s\n", i, argsv[i]);
+        }
+        if(!execvp(argsv[0], argsv)) {
+            printf("grep failed");
+        }
     }
 
     for(int i=0; i< args_count + 1; i++) {

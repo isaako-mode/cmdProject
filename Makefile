@@ -11,6 +11,7 @@ ECHO_BIN = echo
 MV_BIN = mv
 TOUCH_BIN = touch
 MKDIR_BIN = mkdir
+GREP_BIN = grep
 MAIN_BIN = my_program
 
 # Source files for each command
@@ -21,6 +22,8 @@ ECHO_SRCS = echo.c commands.c
 MV_SRCS = mv.c commands.c
 TOUCH_SRCS = touch.c commands.c
 MKDIR_SRCS = mkdir.c commands.c
+GREP_SRCS = grep.c commands.c
+
 
 
 # Object files (auto-generated from source files)
@@ -31,10 +34,12 @@ ECHO_OBJS = $(ECHO_SRCS:.c=.o)
 MV_OBJS = $(MV_SRCS:.c=.o)
 TOUCH_OBJS = $(TOUCH_SRCS:.c=.o)
 MKDIR_OBJS = $(MKDIR_SRCS:.c=.o)
+GREP_OBJS = $(GREP_SRCS:.c=.o)
+
 
 
 # Default rule: build all binaries
-all: $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) $(MV_BIN) $(TOUCH_BIN) $(MKDIR_BIN) 
+all: $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) $(MV_BIN) $(TOUCH_BIN) $(MKDIR_BIN) $(GREP_BIN) 
 
 # Rule to build the main binary (e.g., for the core application)
 $(MAIN_BIN): $(MAIN_OBJS)
@@ -64,10 +69,14 @@ $(TOUCH_BIN): $(TOUCH_OBJS)
 $(MKDIR_BIN): $(MKDIR_OBJS)
 	$(CC) $(CFLAGS) -o $(MKDIR_BIN) $(MKDIR_OBJS)
 
+#mkdir rules
+$(GREP_BIN): $(GREP_OBJS)
+	$(CC) $(CFLAGS) -o $(GREP_BIN) $(GREP_OBJS)
+
 # Generic rule to build object files
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean up build artifacts
 clean:
-	rm -f $(MAIN_OBJS) $(LS_OBJS) $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) $(MV_BIN) $(TOUCH_BIN) $(MKDIR_BIN)
+	rm -f $(MAIN_OBJS) $(LS_OBJS) $(MAIN_BIN) $(LS_BIN) $(CAT_BIN) $(ECHO_BIN) $(MV_BIN) $(TOUCH_BIN) $(MKDIR_BIN) $(GREP_BIN)
