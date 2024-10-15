@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 
 #define NUM_THREADS 4
 #define MAX_LINES 500
@@ -33,11 +35,11 @@ void *search_lines(void *arg) {
     //     printf("%s%s", " PATTERN ", search_obj->pattern);
     // }
 
-    for(int i = search_obj->index; i < i + search_obj->work; i++) {
-        if (search_obj->work_lines[i] != NULL && strstr(search_obj->pattern, search_obj->work_lines[i]) != NULL) {
-
-            search_obj->output_lines[i] = malloc(sizeof(char*)*MAX_LEN);
-            strcpy(search_obj->output_lines[i], search_obj->work_lines[i]);
+    for(int i = search_obj->index; i < search_obj->index + search_obj->work; i++) {
+        printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
+        if (search_obj->work_lines[i-1] != NULL && strstr(search_obj->pattern, search_obj->work_lines[i-1]) != NULL) {
+            search_obj->output_lines[i-1] = malloc(sizeof(char*)*MAX_LEN);
+            strcpy(search_obj->output_lines[i-1], search_obj->work_lines[i-1]);
         }
     }
 
@@ -113,6 +115,7 @@ int main(int argc, char **argv) {
 
     //work done by each thread
     int work = num_lines / NUM_THREADS;
+    int remainder = num_lines % NUM_THREADS;
 
     //matched lines to output
     char** output_lines = malloc(sizeof(char*) * MAX_LINES);
@@ -125,11 +128,12 @@ int main(int argc, char **argv) {
     pthread_t* threads = malloc(sizeof(pthread_t)*NUM_THREADS);
 
     //struct for parameters to pass to threads
-    search **search_objs = malloc(sizeof(search*)*NUM_THREADS);
+    search **search_objs = malloc(sizeof(search*)*(NUM_THREADS + 1));
 
     for (int i = 0; i < NUM_THREADS; i++) {
         search_objs[i] = malloc(sizeof(search));  // Allocate memory for each `search` object
     }
+    search_objs[NUM_THREADS] = NULL;
     
     //FOR DEBUGGING
     for(int i = 0; i < num_lines; i++) {
@@ -142,9 +146,11 @@ int main(int argc, char **argv) {
         search_objs[i]->pattern = strdup(argv[1]);
         search_objs[i]->work_lines = lines;
         search_objs[i]->output_lines = output_lines;
-        search_objs[i]->index = i;
-        search_objs[i]->work = work;
+        // search_objs[i]->index = i+1;
+        // search_objs[i]->work = work;
 
+        search_objs[i]->index = ((i) * work + min(i, remainder)) + 1;  // Adjust the starting index
+        search_objs[i]->work = work + (i < remainder ? 1 : 0);
         //create thread and run search_lines function
         pthread_create(&threads[i], NULL, search_lines, (void*)search_objs[i]);
     }
