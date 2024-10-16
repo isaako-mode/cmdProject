@@ -9,9 +9,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include "./queue.h"
+#include <regex.h>
+
+
 #define min(a, b) ((a) < (b) ? (a) : (b))
-
-
 #define NUM_THREADS 4
 #define MAX_LINES 500
 #define MAX_LEN 100
@@ -23,27 +25,30 @@ typedef struct search {
     char** output_lines;
     int index;
     int work;
+    Queue* output_queue;
 } search;
 
 void *search_lines(void *arg) {
     search *search_obj = (search*)arg;
 
-    // int j = 0;
-    // while(1==1) {
-    //     printf("%s%s", " SEARCHLINE ", search_obj->work_lines[0]);
-    //     printf("%s%s", " SEARCHLINE2 ", search_obj->work_lines[1]);
-    //     printf("%s%s", " PATTERN ", search_obj->pattern);
-    // }
+    regex_t reegex;
+    int reg_match;
+    reg_match = regcomp( &reegex, search_obj->pattern, 0);
+    // Function call to create regex
 
     for(int i = search_obj->index; i < search_obj->index + search_obj->work; i++) {
-        printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
-        if (search_obj->work_lines[i-1] != NULL && strstr(search_obj->pattern, search_obj->work_lines[i-1]) != NULL) {
-            search_obj->output_lines[i-1] = malloc(sizeof(char*)*MAX_LEN);
-            strcpy(search_obj->output_lines[i-1], search_obj->work_lines[i-1]);
+        //printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
+
+        if (search_obj->work_lines[i-1] != NULL && regexec( &reegex, search_obj->work_lines[i-1], 0, NULL, 0) == 0) {
+            printf("MATCH\n");
+            printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
+
+            search_obj->output_lines[i-1] = malloc(sizeof(char)*MAX_LEN);
+            enqueue(search_obj->output_queue, search_obj->output_lines[i-1]);
         }
     }
-
-    pthread_exit(NULL);  // Return the result
+    regfree(&reegex);
+    pthread_exit(search_obj->output_queue);
 }
 
 
@@ -146,37 +151,58 @@ int main(int argc, char **argv) {
         search_objs[i]->pattern = strdup(argv[1]);
         search_objs[i]->work_lines = lines;
         search_objs[i]->output_lines = output_lines;
-        // search_objs[i]->index = i+1;
-        // search_objs[i]->work = work;
-
         search_objs[i]->index = ((i) * work + min(i, remainder)) + 1;  // Adjust the starting index
         search_objs[i]->work = work + (i < remainder ? 1 : 0);
+        search_objs[i]->output_queue = create_queue();
+
         //create thread and run search_lines function
         pthread_create(&threads[i], NULL, search_lines, (void*)search_objs[i]);
     }
 
+    Queue* output;
+
     //join the threads
     for (int i = 0; i < NUM_THREADS; i++) {
-        if (pthread_join(threads[i], NULL) != 0) {
+        if (pthread_join(threads[i], (void**)&output) != 0) {
             perror("Failed to join thread");
             return 1;
         }
+    
+        if (output == NULL) {
+        printf("Thread %d returned a NULL queue\n", i);
+        continue;  // Skip if the thread returned NULL
+        }
+
+        while (output != NULL && output->front != NULL) {
+        char* result = dequeue(output);
+        if (result != NULL) {
+            printf("%s\n", result);
+            free(result); 
+            }
+        }
+
+        free(output);
+        output = NULL;
     }
 
-    for (int i = 0; i < MAX_LINES; i++) {
-        if (output_lines[i] != NULL) {
-            printf("%s", output_lines[i]);
-            free(output_lines[i]);  // Free each output line
-        }
-    }
+    
+
+    // for (int i = 0; i < MAX_LINES; i++) {
+    //     if (output_lines[i] != NULL) {
+    //         printf("%s", output_lines[i]);
+    //         free(output_lines[i]);  // Free each output line
+    //     }
+    // }
 
     //free everything
     free(output_lines);
     
     for (int i = 0; i < NUM_THREADS; i++) {
+        free_queue(search_objs[i]->output_queue);
         free(search_objs[i]);
     }
-    free(search_objs);
+     free(search_objs);
+     free_queue(output);
 
     return 0;
 }
