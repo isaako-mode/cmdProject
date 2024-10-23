@@ -12,7 +12,7 @@
 
 //ESCAPE
 void escape() {
-    printf("%s", "Goodbye =)");
+    printf("%s", "Goodbye =)\n");
     exit(0);
 }
 
@@ -106,10 +106,7 @@ void clearScreen()
     }
 
     else if(strcmp(cmd, "grep") == 0) {
-
-        for (int i = 0; argsv[i] != NULL; i++) {
-            printf("argsv[%d]: %s\n", i, argsv[i]);
-        }
+        
         if(!execvp(argsv[0], argsv)) {
             printf("grep failed");
         }

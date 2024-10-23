@@ -40,15 +40,16 @@ void *search_lines(void *arg) {
         //printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
 
         if (search_obj->work_lines[i-1] != NULL && regexec( &reegex, search_obj->work_lines[i-1], 0, NULL, 0) == 0) {
-            printf("MATCH\n");
-            printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
+            //printf("MATCH\n");
+            //printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
 
-            search_obj->output_lines[i-1] = malloc(sizeof(char)*MAX_LEN);
-            enqueue(search_obj->output_queue, search_obj->output_lines[i-1]);
+            //search_obj->work_lines[i-1] = malloc(sizeof(char)*MAX_LEN);
+            enqueue(search_obj->output_queue, search_obj->work_lines[i-1]);
+            //printf("%s%d%s%s", "THREAD: ", search_obj->index, " ENQUEUED: " , search_obj->output_queue->front->data);
         }
     }
     regfree(&reegex);
-    pthread_exit(search_obj->output_queue);
+    pthread_exit((void*)search_obj->output_queue);
 }
 
 
@@ -66,8 +67,6 @@ int main(int argc, char **argv) {
     //data to divy up the work for threads
     char **lines;
     lines = malloc(sizeof(char*) * MAX_LINES);
-    printf("%s", argv[2]);
-    printf("%s", argv[1]);
 
     //track number of lines in the file/input
     int num_lines = 0;
@@ -123,17 +122,17 @@ int main(int argc, char **argv) {
     int remainder = num_lines % NUM_THREADS;
 
     //matched lines to output
-    char** output_lines = malloc(sizeof(char*) * MAX_LINES);
+    char** output_lines = malloc(sizeof(char*) * (MAX_LINES + 1));
 
     for (int i = 0; i < MAX_LINES; i++) {
-        output_lines[i] = malloc(sizeof(char)*MAX_LEN);  // Initialize output lines to NULL
+        output_lines[i] = malloc(sizeof(char) * (MAX_LEN + 1));  // Initialize output lines to NULL
     }
 
     //create threads
     pthread_t* threads = malloc(sizeof(pthread_t)*NUM_THREADS);
 
     //struct for parameters to pass to threads
-    search **search_objs = malloc(sizeof(search*)*(NUM_THREADS + 1));
+    search **search_objs = malloc(sizeof(search*)*(NUM_THREADS));
 
     for (int i = 0; i < NUM_THREADS; i++) {
         search_objs[i] = malloc(sizeof(search));  // Allocate memory for each `search` object
@@ -141,9 +140,9 @@ int main(int argc, char **argv) {
     search_objs[NUM_THREADS] = NULL;
     
     //FOR DEBUGGING
-    for(int i = 0; i < num_lines; i++) {
-    printf("%s", lines[i]);
-    }
+    // for(int i = 0; i < num_lines; i++) {
+    // printf("%s", lines[i]);
+    // }
 
     //run the threads
     for(int i = 0; i < NUM_THREADS; i++) {
@@ -159,31 +158,38 @@ int main(int argc, char **argv) {
         pthread_create(&threads[i], NULL, search_lines, (void*)search_objs[i]);
     }
 
-    Queue* output;
+    //void* output = NULL;
+    Queue* match_queue;
 
     //join the threads
     for (int i = 0; i < NUM_THREADS; i++) {
-        if (pthread_join(threads[i], (void**)&output) != 0) {
+        if (pthread_join(threads[i], (void**)(&match_queue)) != 0) {
             perror("Failed to join thread");
             return 1;
         }
-    
-        if (output == NULL) {
-        printf("Thread %d returned a NULL queue\n", i);
-        continue;  // Skip if the thread returned NULL
+        //match_queue = (Queue*)output;
+        if (match_queue == NULL) {   
+            printf("Thread %d returned a NULL queue\n", i);
+            continue;  // Skip if the thread returned NULL
         }
 
-        while (output != NULL && output->front != NULL) {
-        char* result = dequeue(output);
-        if (result != NULL) {
-            printf("%s\n", result);
-            free(result); 
+        // while(1==1) {
+        //     printf("%s", match_queue->front->data);
+        //     continue;
+        // }
+
+        while (match_queue->front != NULL && match_queue->front->data != NULL) {
+            char* result = dequeue(match_queue);
+            if (result != NULL) {
+                printf("%s", result);
+                free(result);
+                //result = NULL;
+                }
             }
-        }
 
-        free(output);
-        output = NULL;
-    }
+            free(match_queue);
+            // match_queue = NULL;
+        }
 
     
 
@@ -199,10 +205,9 @@ int main(int argc, char **argv) {
     
     for (int i = 0; i < NUM_THREADS; i++) {
         free_queue(search_objs[i]->output_queue);
-        free(search_objs[i]);
+        free(search_objs[i]);  
     }
-     free(search_objs);
-     free_queue(output);
+    //  free(search_objs);
 
     return 0;
 }
