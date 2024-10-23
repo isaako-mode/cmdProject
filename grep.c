@@ -18,7 +18,7 @@
 #define MAX_LINES 500
 #define MAX_LEN 100
 
-
+//struct for attributes each thread needs
 typedef struct search {
     char* pattern;
     char** work_lines;
@@ -183,12 +183,12 @@ int main(int argc, char **argv) {
             if (result != NULL) {
                 printf("%s", result);
                 free(result);
-                //result = NULL;
+                result = NULL;
                 }
             }
 
-            free(match_queue);
-            // match_queue = NULL;
+            free_queue(match_queue);
+            match_queue = NULL;
         }
 
     
@@ -203,10 +203,10 @@ int main(int argc, char **argv) {
     //free everything
     free(output_lines);
     
-    for (int i = 0; i < NUM_THREADS; i++) {
-        free_queue(search_objs[i]->output_queue);
-        free(search_objs[i]);  
-    }
+    // for (int i = 0; i < NUM_THREADS; i++) {
+    //     free_queue(search_objs[i]->output_queue);
+    //     free(search_objs[i]);  
+    // }
     //  free(search_objs);
 
     return 0;

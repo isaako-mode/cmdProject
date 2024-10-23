@@ -95,6 +95,10 @@ char* dequeue(Queue* queue) {
 }
 
 void free_queue(Queue* queue) {
+    // if (queue == NULL) {
+    //     printf("Queue is NULL");
+    //     return;
+    // }
     while(queue->front != NULL) {
         char* temp = dequeue(queue);
         free(temp);
