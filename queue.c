@@ -40,7 +40,8 @@ void enqueue(Queue* queue, char *data) {
         return;
     }
 
-    Node* newNode = (Node*)malloc(sizeof(Node));
+    Node* newNode;
+    newNode = (Node*)malloc(sizeof(Node));
     if(newNode == NULL) {
         perror("Could not allocate memory for new Node");
         exit(1);
@@ -54,6 +55,7 @@ void enqueue(Queue* queue, char *data) {
     }
 
     strcpy(newNode->data, data);
+    newNode->next = NULL;
     
     //if queue is empty
     if(queue->back == NULL) {
@@ -81,24 +83,23 @@ char* dequeue(Queue* queue) {
     }
     
     char* returnString = queue->front->data;
-    Node* tempNode = queue->front;
+    Node* tempNode;
+    tempNode = queue->front;
     queue->front = queue->front->next;
 
     if(queue->front == NULL) {
         queue->back = NULL;
     }
-
-    free(tempNode);
-    return returnString;
     
+    if(tempNode != NULL) {
+        free(tempNode);
+    }
+    return returnString;
     
 }
 
 void free_queue(Queue* queue) {
-    // if (queue == NULL) {
-    //     printf("Queue is NULL");
-    //     return;
-    // }
+
     while(queue->front != NULL) {
         char* temp = dequeue(queue);
         free(temp);

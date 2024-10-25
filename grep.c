@@ -28,6 +28,7 @@ typedef struct search {
     Queue* output_queue;
 } search;
 
+//thread function that runs regex pattern on the work given to the threads
 void *search_lines(void *arg) {
     search *search_obj = (search*)arg;
 
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
          if(!fgets(lines[i], MAX_LEN, fptr) == NULL) {
             i++;
             num_lines +=1;
-         }
+            }
 
         }
 
@@ -122,10 +123,10 @@ int main(int argc, char **argv) {
     int remainder = num_lines % NUM_THREADS;
 
     //matched lines to output
-    char** output_lines = malloc(sizeof(char*) * (MAX_LINES + 1));
+    char** output_lines = malloc(sizeof(char*) * (MAX_LINES));
 
     for (int i = 0; i < MAX_LINES; i++) {
-        output_lines[i] = malloc(sizeof(char) * (MAX_LEN + 1));  // Initialize output lines to NULL
+        output_lines[i] = malloc(sizeof(char) * (MAX_LEN));  // Initialize output lines to NULL
     }
 
     //create threads
@@ -137,7 +138,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < NUM_THREADS; i++) {
         search_objs[i] = malloc(sizeof(search));  // Allocate memory for each `search` object
     }
-    search_objs[NUM_THREADS] = NULL;
+    //search_objs[NUM_THREADS] = NULL;
     
     //FOR DEBUGGING
     // for(int i = 0; i < num_lines; i++) {
@@ -145,9 +146,11 @@ int main(int argc, char **argv) {
     // }
 
     //run the threads
+    char* pattern;
+    pattern = argv[1];
     for(int i = 0; i < NUM_THREADS; i++) {
         //initialize search struct members
-        search_objs[i]->pattern = strdup(argv[1]);
+        search_objs[i]->pattern = pattern;
         search_objs[i]->work_lines = lines;
         search_objs[i]->output_lines = output_lines;
         search_objs[i]->index = ((i) * work + min(i, remainder)) + 1;  // Adjust the starting index
@@ -173,41 +176,43 @@ int main(int argc, char **argv) {
             continue;  // Skip if the thread returned NULL
         }
 
-        // while(1==1) {
-        //     printf("%s", match_queue->front->data);
-        //     continue;
-        // }
-
         while (match_queue->front != NULL && match_queue->front->data != NULL) {
+
             char* result = dequeue(match_queue);
+            
             if (result != NULL) {
                 printf("%s", result);
                 free(result);
                 result = NULL;
                 }
             }
-
             free_queue(match_queue);
             match_queue = NULL;
         }
 
     
 
-    // for (int i = 0; i < MAX_LINES; i++) {
-    //     if (output_lines[i] != NULL) {
-    //         printf("%s", output_lines[i]);
-    //         free(output_lines[i]);  // Free each output line
-    //     }
-    // }
-
     //free everything
+    for(int i = 0; i < MAX_LINES; i++) {
+        if(output_lines[i] != NULL) {
+            free(output_lines[i]);
+        }
+    }
     free(output_lines);
-    
-    // for (int i = 0; i < NUM_THREADS; i++) {
+
+    for(int i = 0; i < num_lines; i++) {
+        if(lines[i] != NULL) {
+            free(lines[i]);
+        }
+    }
+    free(lines);
+
+    for (int i = 0; i < NUM_THREADS; i++) {
     //     free_queue(search_objs[i]->output_queue);
-    //     free(search_objs[i]);  
-    // }
-    //  free(search_objs);
+        free(search_objs[i]);  
+    }
+    free(search_objs);
+    free(threads);
 
     return 0;
 }
