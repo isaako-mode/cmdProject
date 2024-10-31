@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include<fcntl.h> 
 
-
+#define MAX_ARG_LEN
 #define MAX_STRINGS 50
 #define MAX_CMD_LEN 15
 
@@ -20,7 +20,36 @@ typedef struct {
     char *redirectSymbol;
     char *writeFile;
     bool isRedirect;
+    bool isPipe;
 } Input;
+
+//for adding a new argument if needed
+char** add_args(char** initialArgs, char* newArg) {
+    int arg_count = 0;
+    while(initialArgs[arg_count] != NULL) {
+        arg_count++;
+    }
+
+    char** newArgs = malloc((arg_count + 2)*sizeof(char*));
+    newArgs[0] = strdup(newArg);
+
+
+    if(newArgs == NULL) {
+        perror("Malloc failed!");
+        exit(1);
+    }
+
+    for(int i = 1; i < arg_count; i++) {
+        newArgs[i] = initialArgs[i];
+    }
+
+    newArgs[arg_count + 1] = NULL;
+
+    return newArgs;
+
+}
+
+
 
 //free char arrays
 void free_array(char **arr) {
@@ -82,6 +111,8 @@ Input process_input(char inputStr[]) {
     vals.command = malloc(MAX_CMD_LEN * sizeof(char *));
     vals.args = malloc(MAX_STRINGS * sizeof(char *));
     vals.isRedirect = false;
+    vals.isPipe = false;
+
 
     //copy individual inputs into an array of strings
     int i = 0;
@@ -108,11 +139,11 @@ Input process_input(char inputStr[]) {
 
     else {
         printf("%c%s%c%s", '"', vals.strs[0], '"' ," is an unknown or missing command");
+        return;
     }
 
     if(vals.strs[1] != NULL) {
        //S int num_args = (sizeof(vals.strs) / sizeof(vals.strs[1])) - 1;
-
         //handle rest of the inputs (redirect symbols/args)
         for(int j = 1; vals.strs[j] != NULL; j++) {
 
@@ -131,6 +162,24 @@ Input process_input(char inputStr[]) {
 
             }
 
+            //set pipe
+            if(vals.strs[j][0] == '|') {
+                vals.isPipe = true;
+                
+                char* newInput = malloc(strlen(inputStr) - j + 1);
+                if(newInput == NULL) {
+                    perror("malloc failed");
+                    exit(1);
+                }
+
+                strcpy(newInput, inputStr + j);
+                //free(inputStr);
+
+                inputStr = newInput;
+
+                break;
+            }
+
             //else add to args
             else {
                 vals.args[j-1] = malloc(strlen(vals.strs[j]) + 1);
@@ -146,6 +195,11 @@ Input process_input(char inputStr[]) {
 int main() {
     //user input 
     char inputStr[100];
+    bool pipes = false;
+    char* outputStr;
+    int pipe_fds[2];
+    int prev_fd = -1;
+    char buffer[1024];
 
     //save stdout file desc
     const int saveStdout = dup(STDOUT_FILENO);
@@ -156,15 +210,38 @@ int main() {
     }
     //loop for terminal
     while(1==1) {
-        printf("\nEnter a command or type 'escape' to exit $ ");
 
-        //get user input
-        fgets(inputStr, sizeof(inputStr), stdin);
+        if(!pipes) {
+            printf("\nEnter a command or type 'escape' to exit $ ");
 
-        //set ending newline to null terminator
-        inputStr[strcspn(inputStr, "\n")] = '\0';
+            //get user input
+            fgets(inputStr, sizeof(inputStr), stdin);
 
-        Input results = process_input(inputStr);
+            //set ending newline to null terminator
+            inputStr[strcspn(inputStr, "\n")] = '\0';
+        }
+
+        Input results = process_input(&inputStr);
+
+        //if input string contains a prepare to set file descriptor
+        if(results.isPipe) {
+            pipes = true;
+            if(pipe(pipe_fds) == -1) {
+                printf("Pipe fd failed!");
+                exit(1);
+            }
+
+            if(prev_fd != -1) {
+                char** temp = results.args;
+                results.args = add_args(temp, outputStr);
+
+            }
+
+        }
+
+        else {
+            pipes = false;
+        }
 
         //If not a local command, run create child and run external
         bool local = run_local_commands(results.command, results.args);
@@ -180,6 +257,18 @@ int main() {
 
             //if we are the parent process, wait for child to terminate
             else if(pid > 0) {
+
+                if(prev_fd != -1) {
+                    close(prev_fd);
+                }
+                if(pipes) {
+                    close(pipe_fds[1]);
+                    prev_fd = pipe_fds[0];
+                }
+                else {
+                    prev_fd = -1;
+                }
+
                 waitpid(pid, NULL, 0);
             }
 
@@ -191,15 +280,45 @@ int main() {
                     configure_redirection(results.redirectSymbol, results.writeFile);
             }
 
-                //run external commands as a child process
-                run_commands(results.command, results.args);
+            //if not first commnad, read from the previous pipe
+            if(prev_fd != -1) {
+                dup2(prev_fd, STDERR_FILENO);
+                close(prev_fd);
+            }
 
-                if(dup2(saveStdout, STDERR_FILENO) == -1) {
-                    printf("dup2 failed");
-                    exit(1);
+            //if there is a pipe, set file desc
+            if(pipes) {
+                close(pipe_fds[0]);
+                dup2(pipe_fds[1], STDERR_FILENO);
+                close(pipe_fds[1]);
+            }
+
+        //if pipes:
+            //redirect stdout to pipe_fd
+            //set outputStr to output of command run
+            //Above: after setting process_input, set the first element of 'args' to the output string
+
+            //run external commands as a child process
+            run_commands(results.command, results.args);
+
+            //READ OUTPUT FOR PIPES
+            if(pipes) {
+                int nbytes = read(pipe_fds[0], buffer, sizeof(buffer) - 1);
+                if(nbytes >= 0) {
+                    buffer[nbytes] = '\0';
+                    outputStr = malloc(sizeof(buffer));
+                    strcpy(outputStr, buffer);
+                    printf("%s%s""OUTPUT STRING: ", outputStr);
                 }
+            }
+            
 
-                exit(0);
+            if(dup2(saveStdout, STDERR_FILENO)) {
+                printf("dup2 failed");
+                exit(1);
+            }
+
+            exit(0);
         }
 
         }
