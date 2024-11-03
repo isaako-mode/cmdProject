@@ -18,14 +18,87 @@ typedef struct {
 } Input;
 
 
+//redirect stdout to write file *CHANGED TO ACCOUNT FOR PIPES
+void configure_redirection(char *redirectSymbol, char *writeFile) {
+    //file descriptor
+    int fd;
+
+    //check redirect types and set correct mode
+    if(strcmp(redirectSymbol, ">>") == 0) {
+        fd = open(writeFile, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    }
+
+    else if(strcmp(redirectSymbol, ">") == 0) {
+        fd = open(writeFile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    }
+
+    //error handling
+    if(dup2(fd, STDOUT_FILENO) == -1) {
+        printf("dup2 failed");
+    }
+
+    close(fd);
+}
 
 
-process_input(in_file)
 
-    ...
+Input process_input(char* inputStr) {
+
+        char *token = strtok(inputStr, " ");
+
+    //define input type for holding input values (terrible name)
+    Input vals;
+
+    //allocate for input members
+    vals.strs = malloc(MAX_STRINGS * sizeof(char *));
+    vals.command = malloc(MAX_CMD_LEN * sizeof(char *));
+    vals.args = malloc(MAX_STRINGS * sizeof(char *));
+    vals.isRedirect = false;
+
+    //copy individual inputs into an array of strings
+    int i = 0;
+        while(token != NULL && i < MAX_STRINGS) {
+
+            vals.strs[i] = malloc(strlen(token) + 1);
+            if (vals.strs[i] == NULL) {
+                perror("failed to allocate memory");
+                exit(1);
+            }
+
+            if vals.strs[i] == "|":
+            isPipe = true
+            char* temp;
+            temp = inputStr;
+            inputStr = temp[i];
+            strncpy(inputStr, temp + i, strlen(temp) - i);
+            free(temp);
+            break;
+
+            strcpy(vals.strs[i], token);
+
+            token = strtok(NULL, " ");
+            i += 1;
+        }
+
+        //set null terminator
+        vals.strs[i] = NULL;
+
+        //check if there is a command or if it exists then copy into input member
+        if(vals.strs[0] != NULL && check_cmd(vals.strs[0])) {
+            strcpy(vals.command, vals.strs[0]);
+        }
+
+        else {
+            printf("%c%s%c%s", '"', vals.strs[0], '"' ," is an unknown or missing command");
+        }
+
+        if(vals.strs[1] != NULL) {
+        //S int num_args = (sizeof(vals.strs) / sizeof(vals.strs[1])) - 1;
 
      //handle rest of the inputs (redirect symbols/args)
         for(int j = 1; vals.strs[j] != NULL; j++) {
+            
+                  // ******************************* PLAN TO ADD PIPES *****************************************
 
             //handle redirection (configure redirect type and write file)
             if((vals.strs[j][0] == '>' || vals.strs[j][0] == '<') || vals.isRedirect) {
@@ -41,15 +114,6 @@ process_input(in_file)
                 vals.isRedirect = true;
 
             }
-
-
-
-
-                  // ******************************* PLAN TO ADD PIPES *****************************************
-            if vals.strs[j][0] = "|":
-                is pipe = true 
-            else:
-                isPipe = false
 
             //else add to args
             else {
@@ -80,7 +144,7 @@ process_input(in_file)
 
         if results.isPipe:
             //list of inputs to execute and flag saying we need to read in more pipes
-            Input *input_pipe[50] //<- arbitrary size for now
+            Input *input_pipes[50] //<- arbitrary size for now
             bool more_pipes = true
             char ** input_stirngs
 

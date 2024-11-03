@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
         }
     }
     else {
-        printf("no file foo");
+        printf("%s%s", "file provided for cat not found! ", argv[1]);
         return 1;
     }
 

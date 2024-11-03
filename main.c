@@ -25,8 +25,10 @@ typedef struct {
 
 //for adding a new argument if needed
 char** add_args(char** initialArgs, char* newArg) {
+    
     int arg_count = 0;
     while(initialArgs[arg_count] != NULL) {
+        printf("%s", "curr arg: ");
         arg_count++;
     }
 
@@ -49,7 +51,15 @@ char** add_args(char** initialArgs, char* newArg) {
 
 }
 
-
+//free results object's attributes
+void free_results(Input *result) {
+    free_array(result->strs);
+    free_array(result->args);
+    free(result->command);
+    result->strs = NULL;
+    result->args = NULL;
+    result->command = NULL;
+}
 
 //free char arrays
 void free_array(char **arr) {
@@ -58,8 +68,8 @@ void free_array(char **arr) {
 }
 
 //check if user entered a valid command
-bool check_cmd(char *cmd){
-    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", "touch", "mkdir", "grep", NULL};
+bool check_cmd(char* cmd){
+    const char* COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", "touch", "mkdir", "grep", NULL};
     bool known_cmd = false;
     int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 
@@ -91,7 +101,7 @@ void configure_redirection(char *redirectSymbol, char *writeFile) {
 
     //error handling
     if(dup2(fd, STDOUT_FILENO) == -1) {
-        printf("dup2 failed");
+        printf("dup2 failed at redirect config ");
     }
 
     close(fd);
@@ -133,13 +143,8 @@ Input process_input(char inputStr[]) {
     vals.strs[i] = NULL;
 
     //check if there is a command or if it exists then copy into input member
-    if(vals.strs[0] != NULL && check_cmd(vals.strs[0])) {
+    if(vals.strs[0] != NULL) {
         strcpy(vals.command, vals.strs[0]);
-    }
-
-    else {
-        printf("%c%s%c%s", '"', vals.strs[0], '"' ," is an unknown or missing command");
-        return;
     }
 
     if(vals.strs[1] != NULL) {
@@ -176,7 +181,6 @@ Input process_input(char inputStr[]) {
                 //free(inputStr);
 
                 inputStr = newInput;
-
                 break;
             }
 
@@ -221,10 +225,22 @@ int main() {
             inputStr[strcspn(inputStr, "\n")] = '\0';
         }
 
-        Input results = process_input(&inputStr);
+        Input results = process_input(inputStr);
+        
+        //check if command exists and clear inputs if it doesn't
+        if (!check_cmd(results.command)) {
+            printf("%c%s%c%s", '"', results.command, '"' ," is an unknown or missing command");
+            free_results(&results);
+            memset(inputStr, '\0', sizeof(inputStr));
+            memset(outputStr, '\0', sizeof(outputStr));
 
+            results.isRedirect = false;
+            results.isPipe = false;
+            continue;
+        }
         //if input string contains a prepare to set file descriptor
         if(results.isPipe) {
+
             pipes = true;
             if(pipe(pipe_fds) == -1) {
                 printf("Pipe fd failed!");
@@ -234,7 +250,6 @@ int main() {
             if(prev_fd != -1) {
                 char** temp = results.args;
                 results.args = add_args(temp, outputStr);
-
             }
 
         }
@@ -268,8 +283,7 @@ int main() {
                 else {
                     prev_fd = -1;
                 }
-
-                waitpid(pid, NULL, 0);
+  
             }
 
             //if we are a child process, handle external commands 
@@ -279,47 +293,64 @@ int main() {
                     fflush(stdout);
                     configure_redirection(results.redirectSymbol, results.writeFile);
             }
+            //MOVE BACK TO LINE 286
+            waitpid(pid, NULL, 0);
 
-            //if not first commnad, read from the previous pipe
-            if(prev_fd != -1) {
-                dup2(prev_fd, STDERR_FILENO);
-                close(prev_fd);
-            }
-
-            //if there is a pipe, set file desc
             if(pipes) {
+                printf("HANDLING PIPE FOR OUTPUT\n");
+                //fflush(stdout);
+
+            //if there is a pipe, set file desc to the output 
                 close(pipe_fds[0]);
-                dup2(pipe_fds[1], STDERR_FILENO);
+                dup2(pipe_fds[1], STDOUT_FILENO);
                 close(pipe_fds[1]);
             }
 
-        //if pipes:
-            //redirect stdout to pipe_fd
-            //set outputStr to output of command run
-            //Above: after setting process_input, set the first element of 'args' to the output string
+            //if not first commnad, read from the previous pipe
+            if(prev_fd != -1) {
+                dup2(prev_fd, STDIN_FILENO);
+                close(prev_fd);
+            }
 
             //run external commands as a child process
             run_commands(results.command, results.args);
 
-            //READ OUTPUT FOR PIPES
-            if(pipes) {
-                int nbytes = read(pipe_fds[0], buffer, sizeof(buffer) - 1);
-                if(nbytes >= 0) {
-                    buffer[nbytes] = '\0';
-                    outputStr = malloc(sizeof(buffer));
-                    strcpy(outputStr, buffer);
-                    printf("%s%s""OUTPUT STRING: ", outputStr);
-                }
-            }
             
-
-            if(dup2(saveStdout, STDERR_FILENO)) {
-                printf("dup2 failed");
+            if(dup2(saveStdout, STDOUT_FILENO) == -1) {
+                printf("dup2 failed when redirecting after pipes");
                 exit(1);
             }
 
-            exit(0);
-        }
+            //READ OUTPUT FOR PIPES
+            if(pipes) {
+                printf("SETTING OUTPUT\n");
+
+                close(pipe_fds[1]);
+
+                int nbytes = read(pipe_fds[0], buffer, sizeof(buffer) - 1);
+
+                if(nbytes > 0) {
+                    buffer[nbytes] = '\0';
+                    outputStr = malloc(nbytes + 1);
+
+                    if(outputStr == NULL) {
+                        printf("FAILED TO ALLOCATE OUTPUTSTR\n");
+                        exit(1);
+                    }
+                    strcpy(outputStr, buffer);
+                    printf("%s%s""OUTPUT STRING: ", outputStr);
+                }
+
+                else {
+                    printf("No data in Pipe or read failed!\n");
+                }
+                
+
+            }
+
+            close(pipe_fds[0]);
+            }
+
 
         }
 
@@ -328,10 +359,10 @@ int main() {
         // }
 
         //free(results.writeFile);
-        free_array(results.strs);
-        free_array(results.args);
-        free(results.command);
-        memset(inputStr, '\0', sizeof(inputStr));
+        if(!pipes) {
+            memset(inputStr, '\0', sizeof(inputStr));
+        }
+        free_results(&results);
         results.isRedirect = false;
 
     }

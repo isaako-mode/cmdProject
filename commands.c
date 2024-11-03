@@ -75,7 +75,7 @@ void clearScreen()
 
     //set null terminator
     args[args_count+1] = NULL;
-\
+
     //FOR DEBUGGING
     // for (int i = 0; argsv[i] != NULL; i++) {
     //     printf("argsv[%d]: %s\n", i, argsv[i]);
