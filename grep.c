@@ -55,17 +55,7 @@ void *search_lines(void *arg) {
 
 
 int main(int argc, char **argv) {
-    //PLAN:
-    //read the file
-    //get number of lines
-    //calc number of threads (how will this scale w file size?)
 
-    //each thread will get (number of lines) / (number of threads) lines
-    //each thread will check its lines for the regex pattern
-
-    //first threads will write their work in earlier indexes of the output bc that will keep the order of lines w regex pattern
-
-    //data to divy up the work for threads
     char **lines;
     lines = malloc(sizeof(char*) * MAX_LINES);
 
