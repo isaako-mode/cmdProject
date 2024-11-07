@@ -34,7 +34,7 @@ void free_array(char **arr) {
 bool check_cmd(char *cmd){
     const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", "touch", "mkdir", "grep", NULL};
     bool known_cmd = false;
-    int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
+    //int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 
     for(int i=0; COMMANDS[i] != NULL; i++) {
 
@@ -88,29 +88,61 @@ void configure_redirection(char *redirectSymbol, char *writeFile) {
 }
 
 
+void exec_pipes(Input** commands) {
+    //execute command
+    //write output (stdout) to stdin
+    //child process reads stdin
+    //child process adds this to args
+    //repeat
+
+}
+
+
 //process the input string - returns Input struct with split strings
 Input** process_input(char inputStr[]) {
 
-    //tokenize the input by splitting by whitespace
 
     Input** commands;
     commands = malloc(sizeof(Input)*MAX_COMMANDS);
-    char* cmd_token = strtok(inputStr, "|");
+    //const char s[4] = "|";
 
-    //define input type for holding input values (terrible name)
-    Input* vals;
+    //char* cmd_token = strtok(inputStr, s);
+    char* current_command = malloc(strlen(inputStr));
+    strcpy(current_command, inputStr);
+
+    //holds individual strings separated by whitespace 
+    char* strs[MAX_STRINGS];
+
+    //tokenize the input by splitting by whitespace
+    //copy individual inputs into an array of strings
+    char* token = strtok(current_command, " ");
+
+    int i = 0;
+    while(token != NULL && i < MAX_STRINGS) {
+
+        strs[i] = malloc(strlen(token) + 1);
+        if (strs[i] == NULL) {
+            perror("failed to allocate memory");
+            exit(1);
+        }
+        strcpy(strs[i], token);
+        printf("%s%s", strs[i], "\n");
+        token = strtok(NULL, " ");
+        i += 1;
+    }
+
+    //set null terminator
+    strs[i] = NULL;
+
     int cmd_pos = 0;
+    bool pipe = true;
+    int curr_str = 0;
 
-    while(cmd_token != NULL && cmd_pos < MAX_COMMANDS) {
-        //cmd_token = trim(cmd_token);
-        char* current_command = malloc(strlen(cmd_token));
-        strcpy(current_command, cmd_token);
-        current_command = trim(current_command);
-
-        char* token = strtok(current_command, " ");
-        printf("%s%s%c", "CURRENT COMMAND: ", cmd_token, '\n');
-
-        
+    while(pipe) {
+        //define input type for holding input values (terrible name)
+        Input* vals;
+        //printf("%s%s%c", "CURRENT COMMAND: ", cmd_token, '\n');
+        pipe = false;
         vals = malloc(sizeof(Input));
         //allocate for input members
         vals->strs = malloc(MAX_STRINGS * sizeof(char *));
@@ -119,80 +151,73 @@ Input** process_input(char inputStr[]) {
         vals->isRedirect = false;
         vals->cmd_id = cmd_pos;
 
-        //copy individual inputs into an array of strings
-        int i = 0;
-        while(token != NULL && i < MAX_STRINGS) {
-
-            vals->strs[i] = malloc(strlen(token) + 1);
-            if (vals->strs[i] == NULL) {
-                perror("failed to allocate memory");
-                exit(1);
-            }
-            strcpy(vals->strs[i], token);
-
-            token = strtok(NULL, " ");
-            i += 1;
-        }
-
-        //set null terminator
-        vals->strs[i] = NULL;
-
         //check if there is a command or if it exists then copy into input member
-        if(vals->strs[0] != NULL && check_cmd(vals->strs[0])) {
-            strcpy(vals->command, vals->strs[0]);
+        if(strs[curr_str] != NULL && check_cmd(strs[curr_str])) {
+            strcpy(vals->command, strs[curr_str]);
         }
 
         else {
-            printf("%c%s%c%s", '"', vals->strs[0], '"' ," is an unknown or missing command");
+            printf("%c%s%c%s", '"', strs[curr_str], '"' ," is an unknown or missing command");
         }
+            
+        //current_command = current_command + cmd_pos;
 
-        if(vals->strs[1] != NULL) {
+
+        if(strs[curr_str + 1] != NULL) {
         //S int num_args = (sizeof(vals.strs) / sizeof(vals.strs[1])) - 1;
 
             //handle rest of the inputs (redirect symbols/args)
-            for(int j = 1; vals->strs[j] != NULL; j++) {
+            for(int j = curr_str+1; strs[j] != NULL; j++) {
+                printf("%s%s", "\nCURRENT INPUT: ", strs[j]);
 
                 //handle redirection (configure redirect type and write file)
-                if((vals->strs[j][0] == '>' || vals->strs[j][0] == '<') || vals->isRedirect) {
+                if((strs[j][0] == '>' || strs[j][0] == '<') || vals->isRedirect) {
 
                     if(vals->isRedirect) {
                         //TODO: handle missing file
-                        vals->writeFile = malloc(strlen(vals->strs[j]));
-                        strcpy(vals->writeFile, vals->strs[j]);
+                        vals->writeFile = malloc(strlen(strs[j]));
+                        strcpy(vals->writeFile, strs[j]);
                         continue;
                     }
-                    vals->redirectSymbol = malloc(strlen(vals->strs[j]));
-                    strcpy(vals->redirectSymbol, vals->strs[j]);
+                    vals->redirectSymbol = malloc(strlen(strs[j]));
+                    strcpy(vals->redirectSymbol, strs[j]);
                     vals->isRedirect = true;
 
                 }
 
-                //     //set pipe
-                // if(vals->strs[j][0] == '|') {
-                //     break;
-                // }
+                //set pipe
+                else if (strcmp(strs[j], "|") == 0) {
+                    printf("I'm triggered !!! \n");
+                    pipe = true;
+                    curr_str += 2;
 
+                    break;
+                }
                 //else add to args
                 else {
-                    vals->args[j-1] = malloc(strlen(vals->strs[j]) + 1);
-                    strcpy(vals->args[j-1], vals->strs[j]);
+                    vals->args[j-1] = malloc(strlen(strs[j]) + 1);
+                    strcpy(vals->args[j-1], strs[j]);
                 }
             }
 
+            curr_str++;
+
 
         }
-        printf("%d", cmd_pos);
+
         commands[cmd_pos] = vals;
+        printf("%s%s%c", "\nINNER COMMAND: ", commands[cmd_pos]->command, '\n');
         cmd_pos++;
-        cmd_token = strtok(NULL, "|");
-        vals = NULL;
-        free(current_command);
-        current_command = NULL;
+        //cmd_token = strtok(NULL, s);
+        //free(vals);
+        //vals = NULL;
+        // free(current_command);
+        // current_command = NULL;
 
     }
 
-
-    commands[cmd_pos+1] = NULL;
+    commands[cmd_pos] = NULL;
+    free_array(strs);
     return commands;
 }
 
@@ -219,7 +244,7 @@ int main() {
 
         Input** commands = process_input(inputStr);
         for(int i = 0; commands[i] != NULL; i++) {
-            printf(commands[i]->command);
+            printf("%s%s%c", "COMMAND: ", commands[i]->command, '\n');
         } 
 
         Input results = *commands[0];
