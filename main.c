@@ -14,7 +14,6 @@
 
 //struct for array with split strings
 typedef struct {
-    char **strs;
     char **args;
     char *command;
 
@@ -95,6 +94,10 @@ void exec_pipes(Input** commands) {
     //child process adds this to args
     //repeat
 
+    for(int i = 0; commands[i] != NULL; i++) {
+        
+    }
+
 }
 
 
@@ -138,6 +141,7 @@ Input** process_input(char inputStr[]) {
     bool pipe = true;
     int curr_str = 0;
 
+    //loop if pipes | are in input
     while(pipe) {
         //define input type for holding input values (terrible name)
         Input* vals;
@@ -145,7 +149,6 @@ Input** process_input(char inputStr[]) {
         pipe = false;
         vals = malloc(sizeof(Input));
         //allocate for input members
-        vals->strs = malloc(MAX_STRINGS * sizeof(char *));
         vals->command = malloc(MAX_CMD_LEN * sizeof(char *));
         vals->args = malloc(MAX_STRINGS * sizeof(char *));
         vals->isRedirect = false;
@@ -285,14 +288,13 @@ int main() {
                 exit(0);
         }
 
-        }
+    }
 
         // if(results.redirectSymbol != NULL){
         //     free(results.redirectSymbol);
         // }
 
         //free(results.writeFile);
-        free_array(results.strs);
         free_array(results.args);
         free(results.command);
         memset(inputStr, '\0', sizeof(inputStr));
