@@ -300,7 +300,7 @@ Input** process_input(char inputStr[]) {
                 }
                 //else add to args
                 else {
-                    vals->args[j-1] = malloc(strlen(strs[j]) + 1);
+                    vals->args[arg_pos] = malloc(strlen(strs[j]) + 1);
                     strcpy(vals->args[arg_pos], strs[j]);
                     arg_pos++;
                 }
