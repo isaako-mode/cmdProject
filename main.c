@@ -21,7 +21,26 @@ typedef struct {
     char *writeFile;
     bool isRedirect;
     int cmd_id;
+    bool isPipe;
 } Input;
+
+
+//check if command is local for dealing with pipes
+bool is_local_cmd(char* cmd) {
+    const char* LOCAL_CMDS[] = {"cd", "escape", "clear", NULL};
+    bool is_local = false;
+
+    for(int i=0; LOCAL_CMDS[i] != NULL; i++) {
+
+        if(strcmp(cmd, LOCAL_CMDS[i]) == 0) {
+            is_local = true;
+            break;
+        }
+
+    }
+
+    return is_local;
+}
 
 //free char arrays
 void free_array(char **arr) {
@@ -31,7 +50,7 @@ void free_array(char **arr) {
 
 //check if user entered a valid command
 bool check_cmd(char *cmd){
-    const char *COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", "touch", "mkdir", "grep", NULL};
+    const char* COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", "touch", "mkdir", "grep", NULL};
     bool known_cmd = false;
     //int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
 
@@ -86,7 +105,7 @@ void configure_redirection(char *redirectSymbol, char *writeFile) {
     close(fd);
 }
 
-
+//Function for handling pipes. The input is an array of process commands 
 void exec_pipes(Input** commands) {
     //execute command
     //write output (stdout) to stdin
@@ -94,10 +113,91 @@ void exec_pipes(Input** commands) {
     //child process adds this to args
     //repeat
 
-    for(int i = 0; commands[i] != NULL; i++) {
-        
-    }
+    int i = 0;
+    int prev_fd = -1;
 
+    while(commands[i] != NULL) {
+        Input* curr_command = commands[i];
+
+        //setup pipe file descriptors
+        int pipe_fds[2];
+
+        if (commands[i + 1] != NULL) {  // Check if there is a next command to pipe to
+            if (pipe(pipe_fds) == -1) {
+                perror("Pipe creation failed");
+                exit(1);
+            }
+        }
+
+        //check if local command and handle accordingly
+        if(is_local_cmd(curr_command)) {
+
+            if (prev_fd != -1) {  // Redirect stdin from the previous pipe
+            dup2(prev_fd, STDIN_FILENO);
+            close(prev_fd);
+            }
+
+            if (commands[i + 1] != NULL) {  // Redirect stdout to the current pipe
+                dup2(pipe_fds[1], STDOUT_FILENO);
+                close(pipe_fds[1]);
+            }
+
+            run_local_commands(curr_command->command, curr_command->args);
+            fflush(stdout);
+            
+        }
+
+        else {
+                        
+            pid_t pid = fork();
+
+            //if fork failed
+            if(pid == -1) {
+                printf("failed to fork");
+                exit(1);
+            }
+
+            //if we are the parent process, wait for child to terminate
+            else if(pid > 0) {
+
+                if (prev_fd != -1) {
+                close(prev_fd);  // Close the previous read end in the parent
+                }
+
+                if (commands[i + 1] != NULL) {
+                    close(pipe_fds[1]); 
+                    prev_fd = pipe_fds[0];
+            }
+
+            waitpid(-1, NULL, 0);  // Wait for the child process to finish
+            i++;
+            }
+
+            //if we are a child process, handle external commands 
+            else {
+
+                // Redirect stdin to the previous pipe if it's not the first command
+                if (prev_fd != -1) {
+                    dup2(prev_fd, STDIN_FILENO);
+                    close(prev_fd);
+                }
+
+                // Redirect stdout to the current pipe if there is a next command
+                if (commands[i + 1] != NULL) {
+                    dup2(pipe_fds[1], STDOUT_FILENO);
+                    close(pipe_fds[1]);
+                }
+
+                // Close unused file descriptors
+                close(pipe_fds[0]);
+
+                // Run external command
+                run_commands(curr_command->command, curr_command->args);
+                exit(0);  // Exit after executing the command
+            }
+
+        }
+    }
 }
 
 
@@ -140,6 +240,7 @@ Input** process_input(char inputStr[]) {
     int cmd_pos = 0;
     bool pipe = true;
     int curr_str = 0;
+    int arg_pos = 0;
 
     //loop if pipes | are in input
     while(pipe) {
@@ -153,6 +254,7 @@ Input** process_input(char inputStr[]) {
         vals->args = malloc(MAX_STRINGS * sizeof(char *));
         vals->isRedirect = false;
         vals->cmd_id = cmd_pos;
+        vals->isPipe = false;
 
         //check if there is a command or if it exists then copy into input member
         if(strs[curr_str] != NULL && check_cmd(strs[curr_str])) {
@@ -171,7 +273,7 @@ Input** process_input(char inputStr[]) {
 
             //handle rest of the inputs (redirect symbols/args)
             for(int j = curr_str+1; strs[j] != NULL; j++) {
-                printf("%s%s", "\nCURRENT INPUT: ", strs[j]);
+                //printf("%s%s", "\nCURRENT INPUT: ", strs[j]);
 
                 //handle redirection (configure redirect type and write file)
                 if((strs[j][0] == '>' || strs[j][0] == '<') || vals->isRedirect) {
@@ -190,7 +292,7 @@ Input** process_input(char inputStr[]) {
 
                 //set pipe
                 else if (strcmp(strs[j], "|") == 0) {
-                    printf("I'm triggered !!! \n");
+                    vals->isPipe = true;
                     pipe = true;
                     curr_str += 2;
 
@@ -199,17 +301,20 @@ Input** process_input(char inputStr[]) {
                 //else add to args
                 else {
                     vals->args[j-1] = malloc(strlen(strs[j]) + 1);
-                    strcpy(vals->args[j-1], strs[j]);
+                    strcpy(vals->args[arg_pos], strs[j]);
+                    arg_pos++;
                 }
             }
 
             curr_str++;
+            arg_pos = 0;
 
 
         }
 
         commands[cmd_pos] = vals;
         printf("%s%s%c", "\nINNER COMMAND: ", commands[cmd_pos]->command, '\n');
+        printf("%s%s%c", "\nINNER ARG: ", commands[cmd_pos]->args[0], '\n');
         cmd_pos++;
         //cmd_token = strtok(NULL, s);
         //free(vals);
@@ -248,8 +353,14 @@ int main() {
         Input** commands = process_input(inputStr);
         for(int i = 0; commands[i] != NULL; i++) {
             printf("%s%s%c", "COMMAND: ", commands[i]->command, '\n');
+        }
+
+        //handle input with pipes
+        if(commands[0]->isPipe) {
+            exec_pipes(commands);
         } 
 
+        //TODO: need to add condition to exec single command vs pipeline... Maybe add flag to indicate whether or not there is a pipe in input?
         Input results = *commands[0];
 
         //If not a local command, run create child and run external

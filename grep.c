@@ -17,6 +17,7 @@
 #define NUM_THREADS 4
 #define MAX_LINES 500
 #define MAX_LEN 100
+#define MAX_CHARS 1000
 
 //struct for attributes each thread needs
 typedef struct search {
@@ -34,7 +35,7 @@ void *search_lines(void *arg) {
 
     regex_t reegex;
     int reg_match;
-    reg_match = regcomp( &reegex, search_obj->pattern, 0);
+    reg_match = regcomp(&reegex, search_obj->pattern, 0);
     // Function call to create regex
 
     for(int i = search_obj->index; i < search_obj->index + search_obj->work; i++) {
@@ -56,7 +57,7 @@ void *search_lines(void *arg) {
 
 int main(int argc, char **argv) {
 
-    char **lines;
+    char** lines;
     lines = malloc(sizeof(char*) * MAX_LINES);
 
     //track number of lines in the file/input
@@ -88,7 +89,21 @@ int main(int argc, char **argv) {
 
     //else its text from stdin!
     else {
-        char *token = strtok(argv[2], "\n");
+
+        //Need to read from STDIN instead here
+        char input_buffer[MAX_CHARS];
+
+        fgets(input_buffer, sizeof(input_buffer), stdin);
+
+        if(input_buffer == NULL) {
+            printf("Bad input to STDIN (GREP)");
+            exit(1);
+        }
+
+        //set ending newline to null terminator
+        input_buffer[strcspn(input_buffer, "\n")] = '\0';
+
+        char *token = strtok(input_buffer, "\n");
 
         int j = 0;
         while(token != NULL) {
@@ -107,6 +122,7 @@ int main(int argc, char **argv) {
 
         }
     }
+
 
     //work done by each thread
     int work = num_lines / NUM_THREADS;
@@ -136,8 +152,15 @@ int main(int argc, char **argv) {
     // }
 
     //run the threads
+
     char* pattern;
+
+    if (argv[1] == NULL) {
+        printf("Invalid or missing pattern");
+        exit(1);
+    }
     pattern = argv[1];
+
     for(int i = 0; i < NUM_THREADS; i++) {
         //initialize search struct members
         search_objs[i]->pattern = pattern;
