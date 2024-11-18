@@ -2,3 +2,6 @@ echo
 ls
 core_files
 testGrep
+cat
+commands.o
+grep

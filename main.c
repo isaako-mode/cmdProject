@@ -115,40 +115,57 @@ void exec_pipes(Input** commands) {
 
     int i = 0;
     int prev_fd = -1;
-
+    //setup pipe file descriptors
+    int pipe_fds[2];
     while(commands[i] != NULL) {
         Input* curr_command = commands[i];
-
-        //setup pipe file descriptors
-        int pipe_fds[2];
 
         if (commands[i + 1] != NULL) {  // Check if there is a next command to pipe to
             if (pipe(pipe_fds) == -1) {
                 perror("Pipe creation failed");
                 exit(1);
             }
+
         }
 
         //check if local command and handle accordingly
         if(is_local_cmd(curr_command)) {
 
             if (prev_fd != -1) {  // Redirect stdin from the previous pipe
-            dup2(prev_fd, STDIN_FILENO);
-            close(prev_fd);
+                dup2(prev_fd, STDIN_FILENO);
+
+                if (close(prev_fd) == -1) {
+                    perror("Error closing prev_fd");
+                    exit(1);
+                }
+
+                prev_fd = -1;
             }
 
             if (commands[i + 1] != NULL) {  // Redirect stdout to the current pipe
                 dup2(pipe_fds[1], STDOUT_FILENO);
-                close(pipe_fds[1]);
+
+                if (close(pipe_fds[1]) == -1) {
+                    perror("Error closing pipe_fds[1]");
+                    exit(1);
+                }
             }
 
             run_local_commands(curr_command->command, curr_command->args);
             fflush(stdout);
+
+            if (commands[i + 1] != NULL) {
+                
+                if (close(pipe_fds[0]) == -1) {
+                perror("Error closing pipe_fds[0]");
+                exit(1);
+                }
+            }
             
         }
 
         else {
-                        
+            printf("%s%d%s", "\nProcess:) ", i, commands[i]->command);    
             pid_t pid = fork();
 
             //if fork failed
@@ -161,16 +178,23 @@ void exec_pipes(Input** commands) {
             else if(pid > 0) {
 
                 if (prev_fd != -1) {
-                close(prev_fd);  // Close the previous read end in the parent
+                    //close(prev_fd);  // Close the previous read end in the parent
+                    if (close(prev_fd) == -1) {
+                        perror("Error closing prev_fd");
+                        exit(1);
+                    }
                 }
 
                 if (commands[i + 1] != NULL) {
-                    close(pipe_fds[1]); 
+                    if (close(pipe_fds[1]) == -1) {
+                        perror("Error closing pipe_fds[1]");
+                        exit(1);
+                }
                     prev_fd = pipe_fds[0];
-            }
+                }
 
-            waitpid(-1, NULL, 0);  // Wait for the child process to finish
-            i++;
+                //i++;
+                waitpid(pid, NULL, 0);
             }
 
             //if we are a child process, handle external commands 
@@ -178,26 +202,50 @@ void exec_pipes(Input** commands) {
 
                 // Redirect stdin to the previous pipe if it's not the first command
                 if (prev_fd != -1) {
-                    dup2(prev_fd, STDIN_FILENO);
-                    close(prev_fd);
+
+                    if (dup2(prev_fd, STDIN_FILENO) == -1) {
+                        //close(prev_fd);
+                        perror("Dup2 failed for STDIN_FILENO");
+                        exit(1);
+                    }
+
+                    if (close(prev_fd) == -1) {
+                        perror("Error child closing prev fd");
+                        exit(1);
+                    }
                 }
 
                 // Redirect stdout to the current pipe if there is a next command
                 if (commands[i + 1] != NULL) {
                     dup2(pipe_fds[1], STDOUT_FILENO);
-                    close(pipe_fds[1]);
+
+                    if (close(pipe_fds[1]) == -1) {
+                    perror("Error closing pipe_fds[1]");
+                    exit(1);
+                    }
                 }
 
                 // Close unused file descriptors
-                close(pipe_fds[0]);
+                // if (close(pipe_fds[0]) == -1) {
+                //     perror("Error closing pipe_fds[0]");
+                //     exit(1);
+                // }
 
                 // Run external command
                 run_commands(curr_command->command, curr_command->args);
+                fflush(stdout);
                 exit(0);  // Exit after executing the command
             }
 
         }
+        i++;
     }
+
+    // if (prev_fd != -1) {
+    //     close(prev_fd);
+    // }
+    //while(wait(NULL) > 0);
+    //waitpid(pid, NULL, 0);  // Wait for the child process to finish
 }
 
 
@@ -358,6 +406,7 @@ int main() {
         //handle input with pipes
         if(commands[0]->isPipe) {
             exec_pipes(commands);
+            continue;
         } 
 
         //TODO: need to add condition to exec single command vs pipeline... Maybe add flag to indicate whether or not there is a pipe in input?

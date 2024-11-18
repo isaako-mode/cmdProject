@@ -42,8 +42,8 @@ void *search_lines(void *arg) {
         //printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
 
         if (search_obj->work_lines[i-1] != NULL && regexec( &reegex, search_obj->work_lines[i-1], 0, NULL, 0) == 0) {
-            //printf("MATCH\n");
-            //printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
+            printf("MATCH\n");
+            printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
 
             //search_obj->work_lines[i-1] = malloc(sizeof(char)*MAX_LEN);
             enqueue(search_obj->output_queue, search_obj->work_lines[i-1]);
