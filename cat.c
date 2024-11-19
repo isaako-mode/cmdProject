@@ -9,7 +9,6 @@
 
 int main(int argc, char **argv) {
     FILE *fptr;
-
     if(argv[1] != NULL) {
 
         fptr = fopen(argv[1], "r");

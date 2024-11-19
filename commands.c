@@ -5,7 +5,6 @@
 #include <dirent.h>
 #include "./commands.h"
 #include <unistd.h>
-#define MY_STDOUT STDOUT_FILENO
 
 
  // ******************************* LOCAL FUNCTIONS TO RUN ON THE MAIN PROCESS *****************************

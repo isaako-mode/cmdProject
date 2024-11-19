@@ -125,47 +125,44 @@ void exec_pipes(Input** commands) {
                 perror("Pipe creation failed");
                 exit(1);
             }
-
         }
 
         //check if local command and handle accordingly
         if(is_local_cmd(curr_command)) {
 
-            if (prev_fd != -1) {  // Redirect stdin from the previous pipe
+            if(prev_fd != -1) {  // Redirect stdin from the previous pipe
                 dup2(prev_fd, STDIN_FILENO);
 
-                if (close(prev_fd) == -1) {
+                if(close(prev_fd) == -1) {
                     perror("Error closing prev_fd");
                     exit(1);
                 }
 
-                prev_fd = -1;
+                //prev_fd = -1;
             }
 
-            if (commands[i + 1] != NULL) {  // Redirect stdout to the current pipe
+            if(commands[i + 1] != NULL) {  // Redirect stdout to the current pipe
                 dup2(pipe_fds[1], STDOUT_FILENO);
 
-                if (close(pipe_fds[1]) == -1) {
+                if(close(pipe_fds[1]) == -1) {
                     perror("Error closing pipe_fds[1]");
                     exit(1);
                 }
             }
 
             run_local_commands(curr_command->command, curr_command->args);
-            fflush(stdout);
+            //fflush(stdout);
 
-            if (commands[i + 1] != NULL) {
-                
-                if (close(pipe_fds[0]) == -1) {
-                perror("Error closing pipe_fds[0]");
-                exit(1);
-                }
-            }
+            // if(commands[i + 1] != NULL) { 
+            //     if (close(pipe_fds[0]) == -1) {
+            //     perror("Error closing pipe_fds[0]");
+            //     exit(1);
+            //     }
+            // }
             
         }
 
         else {
-            printf("%s%d%s", "\nProcess:) ", i, commands[i]->command);    
             pid_t pid = fork();
 
             //if fork failed
@@ -177,68 +174,69 @@ void exec_pipes(Input** commands) {
             //if we are the parent process, wait for child to terminate
             else if(pid > 0) {
 
-                if (prev_fd != -1) {
-                    //close(prev_fd);  // Close the previous read end in the parent
+                if(prev_fd != -1) {
                     if (close(prev_fd) == -1) {
                         perror("Error closing prev_fd");
                         exit(1);
                     }
                 }
 
-                if (commands[i + 1] != NULL) {
-                    if (close(pipe_fds[1]) == -1) {
+                if(commands[i + 1] != NULL) {
+                    if(close(pipe_fds[1]) == -1) {
                         perror("Error closing pipe_fds[1]");
                         exit(1);
-                }
+                    }
+
                     prev_fd = pipe_fds[0];
                 }
 
-                //i++;
                 waitpid(pid, NULL, 0);
+                i++;
             }
 
             //if we are a child process, handle external commands 
             else {
 
                 // Redirect stdin to the previous pipe if it's not the first command
-                if (prev_fd != -1) {
-
-                    if (dup2(prev_fd, STDIN_FILENO) == -1) {
-                        //close(prev_fd);
+                if(prev_fd != -1) {
+                    if(dup2(prev_fd, STDIN_FILENO) == -1) {
                         perror("Dup2 failed for STDIN_FILENO");
                         exit(1);
                     }
 
-                    if (close(prev_fd) == -1) {
+                    if(close(prev_fd) == -1) {
                         perror("Error child closing prev fd");
                         exit(1);
                     }
                 }
 
                 // Redirect stdout to the current pipe if there is a next command
-                if (commands[i + 1] != NULL) {
-                    dup2(pipe_fds[1], STDOUT_FILENO);
+                if(commands[i + 1] != NULL) {
+                    if(dup2(pipe_fds[1], STDOUT_FILENO) == -1) {
+                        perror("dup2 failed");
+                    }
 
-                    if (close(pipe_fds[1]) == -1) {
-                    perror("Error closing pipe_fds[1]");
-                    exit(1);
+                    if(close(pipe_fds[1]) == -1) {
+                        perror("Error closing pipe_fds[1]");
+                        exit(1);
                     }
                 }
 
-                // Close unused file descriptors
-                // if (close(pipe_fds[0]) == -1) {
-                //     perror("Error closing pipe_fds[0]");
-                //     exit(1);
-                // }
+                //Close unused file descriptors
+                if(commands[i + 1] != NULL) {
+                    if(close(pipe_fds[0]) == -1) {
+                        perror("Error closing pipe_fds[0]");
+                        exit(1);
+                    }
+
+                }
 
                 // Run external command
                 run_commands(curr_command->command, curr_command->args);
-                fflush(stdout);
                 exit(0);  // Exit after executing the command
             }
 
         }
-        i++;
     }
 
     // if (prev_fd != -1) {
@@ -277,7 +275,6 @@ Input** process_input(char inputStr[]) {
             exit(1);
         }
         strcpy(strs[i], token);
-        printf("%s%s", strs[i], "\n");
         token = strtok(NULL, " ");
         i += 1;
     }
@@ -294,7 +291,7 @@ Input** process_input(char inputStr[]) {
     while(pipe) {
         //define input type for holding input values (terrible name)
         Input* vals;
-        //printf("%s%s%c", "CURRENT COMMAND: ", cmd_token, '\n');
+
         pipe = false;
         vals = malloc(sizeof(Input));
         //allocate for input members
@@ -321,7 +318,6 @@ Input** process_input(char inputStr[]) {
 
             //handle rest of the inputs (redirect symbols/args)
             for(int j = curr_str+1; strs[j] != NULL; j++) {
-                //printf("%s%s", "\nCURRENT INPUT: ", strs[j]);
 
                 //handle redirection (configure redirect type and write file)
                 if((strs[j][0] == '>' || strs[j][0] == '<') || vals->isRedirect) {
@@ -361,8 +357,6 @@ Input** process_input(char inputStr[]) {
         }
 
         commands[cmd_pos] = vals;
-        printf("%s%s%c", "\nINNER COMMAND: ", commands[cmd_pos]->command, '\n');
-        printf("%s%s%c", "\nINNER ARG: ", commands[cmd_pos]->args[0], '\n');
         cmd_pos++;
         //cmd_token = strtok(NULL, s);
         //free(vals);
@@ -398,10 +392,8 @@ int main() {
         //set ending newline to null terminator
         inputStr[strcspn(inputStr, "\n")] = '\0';
 
+        //Parses input and creates input structs (double pointer to handle pipes)
         Input** commands = process_input(inputStr);
-        for(int i = 0; commands[i] != NULL; i++) {
-            printf("%s%s%c", "COMMAND: ", commands[i]->command, '\n');
-        }
 
         //handle input with pipes
         if(commands[0]->isPipe) {

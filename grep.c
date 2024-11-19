@@ -42,8 +42,8 @@ void *search_lines(void *arg) {
         //printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
 
         if (search_obj->work_lines[i-1] != NULL && regexec( &reegex, search_obj->work_lines[i-1], 0, NULL, 0) == 0) {
-            printf("MATCH\n");
-            printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
+            // printf("MATCH\n");
+            // printf("%d%s%d%s%s", search_obj->work, " THREAD ", search_obj->index," SEARCHLINE ", search_obj->work_lines[i-1]);
 
             //search_obj->work_lines[i-1] = malloc(sizeof(char)*MAX_LEN);
             enqueue(search_obj->output_queue, search_obj->work_lines[i-1]);
@@ -93,34 +93,56 @@ int main(int argc, char **argv) {
         //Need to read from STDIN instead here
         char input_buffer[MAX_CHARS];
 
-        fgets(input_buffer, sizeof(input_buffer), stdin);
+         while (fgets(input_buffer, sizeof(input_buffer), stdin) != NULL) {
+        // Remove the trailing newline character, if present
+        //input_buffer[strcspn(input_buffer, "\n")] = '\0';
 
-        if(input_buffer == NULL) {
-            printf("Bad input to STDIN (GREP)");
+        // Allocate memory for the line and store it
+        lines[num_lines] = malloc(strlen(input_buffer) + 1);
+        if (lines[num_lines] == NULL) {
+            perror("Failed to allocate memory");
             exit(1);
         }
 
-        //set ending newline to null terminator
-        input_buffer[strcspn(input_buffer, "\n")] = '\0';
+        strcpy(lines[num_lines], input_buffer);
+        num_lines++;
 
-        char *token = strtok(input_buffer, "\n");
-
-        int j = 0;
-        while(token != NULL) {
-            
-            lines[j] = malloc(strlen(token) + 1);
-            if (lines[j] == NULL) {
-                perror("failed to allocate memory");
-                exit(1);
-            }
-
-            strcpy(lines[j], token);
-
-            token = strtok(NULL, "\n");
-            j += 1;
-            num_lines += 1;
-
+        // Stop if we've reached the maximum number of lines
+        if (num_lines >= MAX_LINES) {
+            fprintf(stderr, "Too many lines of input\n");
+            break;
         }
+    }
+
+    //     fgets(input_buffer, sizeof(input_buffer), stdin);
+
+    //     if(input_buffer == NULL) {
+    //         printf("Bad input to STDIN (GREP)");
+    //         exit(1);
+    //     }
+
+    //     //set ending newline to null terminator
+    //     //input_buffer[strcspn(input_buffer, "\n")] = '\0';
+    //     printf("HERE IS THE INPUT: %s\n", input_buffer);
+        
+    //     char *token = strtok(input_buffer, "\n");
+
+    //     int j = 0;
+    //     while(token != NULL) {
+            
+    //         lines[j] = malloc(strlen(token) + 1);
+    //         if (lines[j] == NULL) {
+    //             perror("failed to allocate memory");
+    //             exit(1);
+    //         }
+
+    //         strcpy(lines[j], token);
+
+    //         token = strtok(NULL, "\n");
+    //         j += 1;
+    //         num_lines += 1;
+
+    //     }
     }
 
 
