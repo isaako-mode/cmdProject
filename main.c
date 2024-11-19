@@ -24,6 +24,12 @@ typedef struct {
     bool isPipe;
 } Input;
 
+//ESCAPE function for when user exits
+void escape() {
+    printf("%s", "Goodbye =)\n");
+    exit(0);
+}
+
 
 //check if command is local for dealing with pipes
 bool is_local_cmd(char* cmd) {
@@ -395,6 +401,10 @@ int main() {
 
         //set ending newline to null terminator
         inputStr[strcspn(inputStr, "\n")] = '\0';
+
+        if(strcmp(inputStr, "escape") == 0) {
+            escape();
+        }
 
         //Parses input and creates input structs (double pointer to handle pipes)
         Input** commands = process_input(inputStr);

@@ -9,12 +9,6 @@
 
  // ******************************* LOCAL FUNCTIONS TO RUN ON THE MAIN PROCESS *****************************
 
-//ESCAPE
-void escape() {
-    printf("%s", "Goodbye =)\n");
-    exit(0);
-}
-
 //CHANGE DIRECTORY
 void cd(char **args) {
     //path var
@@ -120,11 +114,7 @@ void clearScreen()
 //run local commands
 bool run_local_commands(char* cmd, char** args) {
 
-    if(strcmp(cmd, "escape") == 0) {
-        escape();
-        return true;
-    }
-    else if(strcmp(cmd, "cd") == 0) {
+    if(strcmp(cmd, "cd") == 0) {
         cd(args);
         return true;
     }
