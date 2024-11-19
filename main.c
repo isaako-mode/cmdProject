@@ -338,7 +338,11 @@ Input** process_input(char inputStr[]) {
                 else if (strcmp(strs[j], "|") == 0) {
                     vals->isPipe = true;
                     pipe = true;
-                    curr_str += 2;
+
+                    //check if there were arguments for previous function
+                    //and increment next string accordingly (past the pipe if args)
+                    if(vals->args[0] == NULL) {curr_str++;}
+                    else {curr_str += 2;}
 
                     break;
                 }
