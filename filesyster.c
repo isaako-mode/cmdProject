@@ -8,7 +8,6 @@
 #include<fcntl.h> 
 #include "./filesyster.h"
 
-#define FILE_SYSTER_PATH "../filesystem_project/source/my_program"
 
 // Pipe file descriptors
 static int pipe_to_fs[2] = {-1, -1};    // Interface → Filesystem

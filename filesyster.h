@@ -1,5 +1,7 @@
-#ifndef PIPES_H
-#define PIPES_H
+#ifndef FILERSYSTER_H
+#define FILERSYSTER_H
+#define FILE_SYSTER_PATH "/home/isaakpi/Desktop/c_projects/filesystem_project/source/my_program"
+
 
 #include <unistd.h>
 
