@@ -13,10 +13,11 @@ TOUCH_BIN = touch
 MKDIR_BIN = mkdir
 GREP_BIN = grep
 MAIN_BIN = my_program
+#FILESYSTER_BIN = filesyster
 #QUEUE_BIN = queue
 
 # Source files for each command
-MAIN_SRCS = main.c commands.c
+MAIN_SRCS = main.c commands.c filesyster.c
 LS_SRCS = list.c commands.c
 CAT_SRCS = cat.c commands.c
 ECHO_SRCS = echo.c commands.c

@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include<fcntl.h> 
+#include "./filesyster.h"
 
 
 #define MAX_STRINGS 50
@@ -30,6 +31,12 @@ void escape() {
     exit(0);
 }
 
+//checks for prefix
+bool StartsWith(const char *a, const char *b)
+{
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
+}
 
 //check if command is local for dealing with pipes
 bool is_local_cmd(char* cmd) {
@@ -248,8 +255,6 @@ void exec_pipes(Input** commands) {
     // if (prev_fd != -1) {
     //     close(prev_fd);
     // }
-    //while(wait(NULL) > 0);
-    //waitpid(pid, NULL, 0);  // Wait for the child process to finish
 }
 
 
@@ -392,6 +397,7 @@ int main() {
         printf("dup failed");
         exit(1);
     }
+    setup_pipes();
     //loop for terminal
     while(1==1) {
         printf("\nEnter a command or type 'escape' to exit $ ");
@@ -404,6 +410,16 @@ int main() {
 
         if(strcmp(inputStr, "escape") == 0) {
             escape();
+        }
+
+        if(StartsWith(inputStr, "fs")) {
+            char output[256];
+
+            send_to_filesystem(inputStr);
+
+            // Read output from the filesystem app
+            read_from_filesystem(output, sizeof(output));
+            printf("Filesystem Output: %s\n", output);
         }
 
         //Parses input and creates input structs (double pointer to handle pipes)
