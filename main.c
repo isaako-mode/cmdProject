@@ -63,6 +63,10 @@ void free_array(char **arr) {
 
 //check if user entered a valid command
 bool check_cmd(char *cmd){
+
+    //always accept commands starting with 'fs' (file syster commands) (for now)
+     if(StartsWith(cmd, "fs")) {return true;}
+
     const char* COMMANDS[] = {"ls", "cd", "escape", "clear", "cat", "echo", "mv", "touch", "mkdir", "grep", NULL};
     bool known_cmd = false;
     //int length = (sizeof(COMMANDS) / sizeof(COMMANDS[0]));
@@ -120,11 +124,6 @@ void configure_redirection(char *redirectSymbol, char *writeFile) {
 
 //Function for handling pipes. The input is an array of process commands 
 void exec_pipes(Input** commands) {
-    //execute command
-    //write output (stdout) to stdin
-    //child process reads stdin
-    //child process adds this to args
-    //repeat
 
     int i = 0;
     int prev_fd = -1;
@@ -151,7 +150,6 @@ void exec_pipes(Input** commands) {
                     exit(1);
                 }
 
-                //prev_fd = -1;
             }
 
             if(commands[i + 1] != NULL) {  // Redirect stdout to the current pipe
@@ -386,6 +384,8 @@ Input** process_input(char inputStr[]) {
     return commands;
 }
 
+
+/**************MAIN FUNCTION HERE************** */
 int main() {
     //user input 
     char inputStr[100];
@@ -412,7 +412,12 @@ int main() {
             escape();
         }
 
-        if(StartsWith(inputStr, "fs")) {
+
+        //Parses input and creates input structs (double pointer to handle pipes)
+        Input** commands = process_input(inputStr);
+
+        //handle filesyster commands
+        if(StartsWith(commands[0]->command, "fs")) {
             char output[256];
 
             send_to_filesystem(inputStr);
@@ -424,8 +429,6 @@ int main() {
             continue;
         }
 
-        //Parses input and creates input structs (double pointer to handle pipes)
-        Input** commands = process_input(inputStr);
 
         //handle input with pipes
         if(commands[0]->isPipe) {
@@ -489,10 +492,3 @@ int main() {
     return 0;
 
 }
-
-
-//read input
-//process input
-// -split the string by spaces
-// -extract command and inputs
-// -execute command
