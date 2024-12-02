@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include<fcntl.h> 
 #include "./filesyster.h"
+#include <sys/wait.h>
 
 
 // Pipe file descriptors
@@ -41,15 +42,21 @@ void setup_pipes() {
 
     if(fs_pid == 0) {
 
-        if(dup2(pipe_to_fs[1], STDIN_FILENO) == -1 || dup2(pipe_from_fs[0], STDOUT_FILENO) == -1) {
+        if(dup2(pipe_to_fs[0], STDIN_FILENO) == -1 || dup2(pipe_from_fs[1], STDOUT_FILENO) == -1) {
             perror("dup2 failed for read/writing to filesyster app");
             exit(1);
         }
 
         close(pipe_to_fs[0]);
         close(pipe_from_fs[1]);
+        
+        // execl("/home/vlc", "/home/vlc", "/home/my movies/the movie i want to see.mkv", (char*) NULL);
 
-        execl(FILE_SYSTER_PATH, FILE_SYSTER_PATH, NULL);
+        if(execl(FILE_SYSTER_PATH, FILE_SYSTER_PATH, (char*) NULL) == -1) {
+            perror("Faild to execute file syster application");
+            exit(1);
+        }
+
     }
 
     else {
@@ -66,7 +73,10 @@ void send_to_filesystem(const char* input) {
         return;
     }
 
-    write(pipe_to_fs[1], input, strlen(input));
+    if(write(pipe_to_fs[1], input, strlen(input)) == -1) {
+        perror("Failed to write command to file syster");
+        exit(1);
+    }
 }
 
 
