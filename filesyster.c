@@ -73,8 +73,14 @@ void send_to_filesystem(const char* input) {
         return;
     }
 
-    if(write(pipe_to_fs[1], input, strlen(input)) == -1) {
-        perror("Failed to write command to file syster");
+    char buffer[256];  // Ensure this is large enough for your input
+
+    //write formatted string with newline into the buffer
+    snprintf(buffer, sizeof(buffer), "%s\n", input);
+
+    // Write input to pipe
+    if (write(pipe_to_fs[1], buffer, strlen(buffer)) == -1) {
+        perror("Failed to write command to filesystem");
         exit(1);
     }
 }

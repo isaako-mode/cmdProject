@@ -420,6 +420,8 @@ int main() {
             // Read output from the filesystem app
             read_from_filesystem(output, sizeof(output));
             printf("Filesystem Output: %s\n", output);
+            //fflush(stdout);
+            continue;
         }
 
         //Parses input and creates input structs (double pointer to handle pipes)
